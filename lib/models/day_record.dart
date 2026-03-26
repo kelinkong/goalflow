@@ -1,25 +1,9 @@
-import 'package:hive/hive.dart';
-
-part 'day_record.g.dart';
-
-@HiveType(typeId: 1)
-class DayRecord extends HiveObject {
-  @HiveField(0)
+class DayRecord {
   late String id; // "${goalId}_${dateStr}"  e.g. "abc_2025-06-12"
-
-  @HiveField(1)
   late String goalId;
-
-  @HiveField(2)
   late DateTime date;
-
-  @HiveField(3)
   late int dayNumber; // 1-based day in the goal
-
-  @HiveField(4)
   late List<TaskRecord> tasks;
-
-  @HiveField(5)
   late bool isDeferred; // whole day deferred to next
 
   DayRecord({
@@ -41,24 +25,12 @@ class DayRecord extends HiveObject {
   }
 }
 
-@HiveType(typeId: 2)
-class TaskRecord extends HiveObject {
-  @HiveField(0)
+class TaskRecord {
   late String taskText;
-
-  @HiveField(1)
   late bool isDone;
-
-  @HiveField(2)
   late DateTime? doneAt;
-
-  @HiveField(3)
   late bool isMakeup; // retroactive checkin
-
-  @HiveField(4)
   late bool isDeferred; // this specific task deferred
-
-  @HiveField(5)
   late DateTime? deferredTo; // deferred to this date
 
   TaskRecord({

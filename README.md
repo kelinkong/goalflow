@@ -1,118 +1,183 @@
 # GoalFlow
 
-AI 驱动的目标管理 App，基于 Flutter + Hive 构建。
+GoalFlow 是一个围绕个人成长设计的记录系统。
 
-## 功能
+它只回答三个核心问题：
 
-- 🎯 多目标并行管理（暂停/恢复/终止）
-- 📅 按日期查看任务（点击周历任意一天）
-- ✅ 每日打卡 + 过去日期补打卡
-- ⏩ 任务顺延（自动出现在次日）
-- 🤖 AI 拆解每日任务（OpenAI 兼容接口）
-- 📊 进度时间轴 + 打卡日历
-- 💾 本地 Hive 存储，无需联网使用
+1. `目标`
+你想做成什么事？
 
----
+2. `习惯`
+你想成为哪一种人？
+
+3. `复盘`
+你如何理解自己的生活？
+
+产品目标不是记录更多内容，而是用尽量低的记录成本，帮助用户持续推进结果、塑造长期身份、理解自己的生活轨迹。
+
+## 当前产品方向
+
+GoalFlow 当前围绕三条主线收敛：
+
+1. `目标`
+结果导向的事项，可以拆解为任务并按日推进。
+
+2. `习惯`
+长期重复、塑造身份的行为，按天记录完成情况。
+
+3. `复盘`
+对当天状态、行动和意义的理解，不重复承担行为打卡职责。
+
+历史回看统一通过“轨迹”按日期聚合展示：
+
+1. 当天完成了哪些目标任务
+2. 当天完成了哪些习惯
+3. 当天写了什么复盘
+
+## 技术栈
+
+### 用户端
+
+1. Flutter
+2. Dart
+3. Provider
+4. HTTP
+
+### 管理台
+
+1. Vue 3
+2. Vue Router 4
+3. Axios
+4. Vite 5
+
+### 后端
+
+1. Java 17
+2. Spring Boot
+3. Spring Security
+4. MyBatis-Plus
+5. MySQL
+6. JWT
+7. Maven
+
+## 当前能力
+
+### 目标
+
+1. 创建目标
+2. AI 拆解目标任务
+3. 查看目标时间线
+4. 每日打卡
+5. 补卡
+6. 顺延任务
+
+### 模板与排行
+
+1. 模板创建与使用
+2. 模板榜单
+3. 后台模板审核
+
+### 账号体系
+
+1. 注册
+2. 登录
+3. 用户态数据拉取
+
+### 复盘
+
+1. 每日复盘记录
+2. 四个固定维度
+3. 明日最重要的事
+4. 轨迹页按日期查看复盘摘要
+
+习惯模块已经进入正式产品方案，但尚未完整实现。
+
+## 文档
+
+产品与技术的最新方案文档在 [docs/growth-system-requirements.md](./docs/growth-system-requirements.md) 和 [docs/growth-system-tech.md](./docs/growth-system-tech.md)。
+
+如果文档与旧代码、旧截图、旧描述存在冲突，以这两份文档为准。
 
 ## 快速开始
 
-### 1. 配置环境变量
+### 1. 配置客户端环境变量
 
-编辑项目根目录的 `.env` 文件：
+项目根目录 `.env`：
 
 ```env
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxx
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o
+API_BASE_URL=http://127.0.0.1:8081
 ```
 
-> 如果使用其他兼容 OpenAI 格式的服务（如 Azure、Moonshot、DeepSeek 等），修改 `OPENAI_BASE_URL` 和 `OPENAI_MODEL` 即可。
+如果需要连接远程环境，可替换为实际线上地址。
 
-### 2. 安装依赖
+### 2. 启动后端
 
 ```bash
+cd ./backend
+mvn -pl goalflow-api spring-boot:run -DskipTests
+```
+
+默认端口：
+
+```text
+http://127.0.0.1:8081
+```
+
+### 3. 启动 Flutter
+
+```bash
+cd .
 flutter pub get
-```
-
-### 3. 运行
-
-```bash
 flutter run
 ```
 
----
+如果本机没有移动端模拟器，可以先用 Web：
 
-## 环境要求
-
-- Flutter SDK >= 3.0.0
-- Dart SDK >= 3.0.0
-- Android / iOS / macOS / Web 均支持
-
----
-
-## 项目结构
-
-```
-lib/
-├── main.dart                 # 入口 + 底部导航
-├── theme.dart                # 全局颜色/样式常量
-├── models/
-│   ├── goal.dart             # 目标模型（Hive）
-│   ├── goal.g.dart           # Hive 适配器
-│   ├── day_record.dart       # 每日记录模型（Hive）
-│   └── day_record.g.dart     # Hive 适配器
-├── services/
-│   ├── hive_service.dart     # 本地数据库封装
-│   ├── ai_service.dart       # AI 接口（OpenAI 格式）
-│   └── app_state.dart        # 全局状态管理（Provider）
-├── widgets/
-│   └── common.dart           # 公共组件
-└── screens/
-    ├── home_screen.dart      # 首页（周历 + 任务列表）
-    ├── goals_screen.dart     # 目标列表
-    ├── goal_detail_screen.dart # 目标详情（今日/时间轴）
-    ├── new_goal_screen.dart  # 新建目标（AI 拆解流程）
-    ├── progress_screen.dart  # 进度统计
-    ├── settings_screen.dart  # 设置
-    └── login_screen.dart     # 登录/注册
+```bash
+flutter run -d web-server --web-port 3001 --dart-define=API_BASE_URL=http://127.0.0.1:8081
 ```
 
----
+## 目录结构
 
-## 数据说明
-
-- 所有数据存储在设备本地（Hive），路径由系统分配
-- `Goal`：目标基本信息 + 每日任务模板
-- `DayRecord`：每天的任务完成状态，key 为 `{goalId}_{yyyy-MM-dd}`
-- 顺延任务会在次日的 `DayRecord` 中自动出现
-
----
-
-## AI 接口说明
-
-`lib/services/ai_service.dart` 使用标准 OpenAI Chat Completions 格式：
-
-```
-POST {OPENAI_BASE_URL}/chat/completions
-Authorization: Bearer {OPENAI_API_KEY}
-```
-
-返回格式要求（Prompt 已内置）：
-```json
-[{"text":"每日任务内容"},{"text":"..."}]
+```text
+goalflow/
+├── README.md
+├── docs/
+│   ├── growth-system-requirements.md
+│   └── growth-system-tech.md
+├── lib/
+│   ├── main.dart
+│   ├── models/
+│   ├── screens/
+│   ├── services/
+│   └── widgets/
+├── admin_console/
+└── backend/
+    ├── pom.xml
+    └── goalflow-api/
 ```
 
----
+## 当前设计原则
 
-## 补打卡逻辑
+1. 一个行为只记录一次
+2. 目标、习惯、复盘三层边界清楚
+3. 首页只聚焦今天
+4. 轨迹页统一承担历史回看
+5. 避免冗余模块和平行概念
 
-1. 在首页点击周历中**过去的日期**
-2. 查看该天任务列表，标题栏显示「可补卡」标识  
-3. 直接点击任务前的复选框即可补打卡（自动标记 `isMakeup: true`）
-4. 补打卡记录在目标详情时间轴中以「补卡」标签显示
+## 部署
 
-## 顺延逻辑
+常用后端部署命令：
 
-1. 在今日任务右侧点击「顺延」按钮
-2. 该任务标记为 `isDeferred: true`，`deferredTo` 设为次日
-3. 次日打开首页，该任务自动出现在当天的任务列表中
+```bash
+cd ./backend && mvn -pl goalflow-api package -DskipTests
+ssh <your-server> 'cat > ~/goalflow/app/app.jar' < ./backend/goalflow-api/target/goalflow-api-1.0.0.jar
+ssh <your-server> 'cd ~/goalflow && docker compose restart backend'
+```
+
+部署后至少验证：
+
+1. 后端容器是否正常启动
+2. 关键接口是否正常
+3. 数据库 schema 是否已同步
+

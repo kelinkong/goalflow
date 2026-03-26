@@ -1,5 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import for TextInputFormatter
 import '../theme.dart';
+
+String userErrorMessage(Object error) {
+  final raw = error.toString().replaceFirst('Exception: ', '').trim();
+  if (raw.isEmpty) return '操作失败，请稍后重试';
+  return raw;
+}
 
 // ── Section label ─────────────────────────────────────────────────
 class SectionLabel extends StatelessWidget {
@@ -11,6 +20,91 @@ class SectionLabel extends StatelessWidget {
         padding: const EdgeInsets.only(left: 4, bottom: 8),
         child: Text(label.toUpperCase(), style: AppTextStyles.label),
       );
+}
+
+// ── Form Input Field ──────────────────────────────────────────────
+class FormInput extends StatefulWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final TextInputType keyboardType;
+  final bool obscureText;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
+
+  const FormInput({
+    super.key,
+    required this.controller,
+    required this.hintText,
+    this.keyboardType = TextInputType.text,
+    this.obscureText = false,
+    this.inputFormatters,
+    this.maxLength,
+  });
+
+  @override
+  State<FormInput> createState() => _FormInputState();
+}
+
+class _FormInputState extends State<FormInput> {
+  @override
+  void initState() {
+    super.initState();
+    // Listen for changes to trigger rebuilds when controller text changes
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    // Dispose listener when widget is removed
+    widget.controller.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    setState(() {}); // Trigger rebuild when text changes
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: TextField(
+          controller: widget.controller,
+          keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters,
+          maxLength: widget.maxLength,
+          obscureText: widget.obscureText,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: const TextStyle(color: AppColors.sub),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 15),
+            counterText: '', // Hide character counter
+            suffixIcon: widget.controller.text.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      widget.controller.clear();
+                      setState(() {}); // Trigger rebuild to hide the clear button
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.only(right: 0),
+                      child: Icon(Icons.cancel, size: 18, color: AppColors.sub),
+                    ),
+                  )
+                : null,
+            suffixIconConstraints: const BoxConstraints(minWidth: 24, maxHeight: 24),
+          ),
+          style: const TextStyle(fontSize: 15, color: AppColors.text, letterSpacing: 1),
+        ),
+      ),
+    );
+  }
 }
 
 // ── App card ──────────────────────────────────────────────────────
@@ -46,13 +140,13 @@ class AppCard extends StatelessWidget {
 }
 
 // ── Checkbox tile ─────────────────────────────────────────────────
-class TaskCheckTile extends StatelessWidget {
+class TaskCheckTile extends StatefulWidget {
   final String text;
   final bool done;
   final bool deferred;
   final bool isMakeup;
-  final VoidCallback onToggle;
-  final VoidCallback? onDefer;
+  final FutureOr<void> Function() onToggle;
+  final FutureOr<void> Function()? onDefer;
   final bool showDivider;
   final double fontSize;
 
@@ -69,6 +163,38 @@ class TaskCheckTile extends StatelessWidget {
   });
 
   @override
+  State<TaskCheckTile> createState() => _TaskCheckTileState();
+}
+
+class _TaskCheckTileState extends State<TaskCheckTile> {
+  bool _togglePending = false;
+  bool _deferPending = false;
+
+  Future<void> _runToggle() async {
+    if (_togglePending || _deferPending) return;
+    setState(() => _togglePending = true);
+    try {
+      await widget.onToggle();
+    } finally {
+      if (mounted) {
+        setState(() => _togglePending = false);
+      }
+    }
+  }
+
+  Future<void> _runDefer() async {
+    if (_deferPending || _togglePending || widget.onDefer == null) return;
+    setState(() => _deferPending = true);
+    try {
+      await widget.onDefer!();
+    } finally {
+      if (mounted) {
+        setState(() => _deferPending = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) => Column(
         children: [
           Padding(
@@ -77,19 +203,28 @@ class TaskCheckTile extends StatelessWidget {
               children: [
                 // Checkbox
                 GestureDetector(
-                  onTap: onToggle,
+                  onTap: _runToggle,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 22, height: 22,
                     decoration: BoxDecoration(
-                      color: done ? AppColors.accent : Colors.transparent,
+                      color: widget.done ? AppColors.accent : Colors.transparent,
                       border: Border.all(
-                        color: done ? AppColors.accent : AppColors.border,
+                        color: widget.done ? AppColors.accent : AppColors.border,
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: done
+                    child: _togglePending
+                        ? const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : widget.done
                         ? const Icon(Icons.check, color: Colors.white, size: 13)
                         : null,
                   ),
@@ -97,16 +232,16 @@ class TaskCheckTile extends StatelessWidget {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    text,
+                    widget.text,
                     style: TextStyle(
-                      fontSize: fontSize,
-                      color: done || deferred ? AppColors.sub : AppColors.text,
-                      decoration: done ? TextDecoration.lineThrough : null,
+                      fontSize: widget.fontSize,
+                      color: widget.done || widget.deferred ? AppColors.sub : AppColors.text,
+                      decoration: widget.done ? TextDecoration.lineThrough : null,
                       height: 1.45,
                     ),
                   ),
                 ),
-                if (isMakeup)
+                if (widget.isMakeup)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
@@ -115,33 +250,42 @@ class TaskCheckTile extends StatelessWidget {
                     ),
                     child: Text('补卡', style: AppTextStyles.caption),
                   ),
-                if (deferred)
+                if (widget.deferred)
                   Text('明日', style: AppTextStyles.caption),
                 // Defer button (only for undone, non-deferred tasks)
-                if (!done && !deferred && onDefer != null) ...[
+                if (!widget.done && !widget.deferred && widget.onDefer != null) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: onDefer,
+                    onTap: _runDefer,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: AppColors.bg,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(
-                        '顺延',
-                        style: TextStyle(
-                          fontSize: 12, color: AppColors.sub,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: _deferPending
+                          ? const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.sub,
+                              ),
+                            )
+                          : Text(
+                              '顺延',
+                              style: TextStyle(
+                                fontSize: 12, color: AppColors.sub,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                     ),
                   ),
                 ],
               ],
             ),
           ),
-          if (showDivider)
+          if (widget.showDivider)
             Divider(
               height: 1, thickness: 1,
               color: AppColors.border,
@@ -152,9 +296,9 @@ class TaskCheckTile extends StatelessWidget {
 }
 
 // ── Accent button ─────────────────────────────────────────────────
-class AccentButton extends StatelessWidget {
+class AccentButton extends StatefulWidget {
   final String label;
-  final VoidCallback? onTap;
+  final FutureOr<void> Function()? onTap;
   final bool loading;
   final Widget? leading;
 
@@ -167,12 +311,31 @@ class AccentButton extends StatelessWidget {
   });
 
   @override
+  State<AccentButton> createState() => _AccentButtonState();
+}
+
+class _AccentButtonState extends State<AccentButton> {
+  bool _pending = false;
+
+  Future<void> _runTap() async {
+    if (_pending || widget.loading || widget.onTap == null) return;
+    setState(() => _pending = true);
+    try {
+      await widget.onTap!();
+    } finally {
+      if (mounted) {
+        setState(() => _pending = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: loading ? null : onTap,
+          onPressed: widget.loading || _pending || widget.onTap == null ? null : _runTap,
           style: ElevatedButton.styleFrom(
-            backgroundColor: onTap != null ? AppColors.accent : AppColors.border,
+            backgroundColor: widget.onTap != null ? AppColors.accent : AppColors.border,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -180,7 +343,7 @@ class AccentButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          child: loading
+          child: widget.loading || _pending
               ? const SizedBox(
                   width: 20, height: 20,
                   child: CircularProgressIndicator(
@@ -190,8 +353,8 @@ class AccentButton extends StatelessWidget {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (leading != null) ...[leading!, const SizedBox(width: 8)],
-                    Text(label,
+                    if (widget.leading != null) ...[widget.leading!, const SizedBox(width: 8)],
+                    Text(widget.label,
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700)),
                   ],
@@ -222,7 +385,6 @@ class GoalProgressBar extends StatelessWidget {
 // ── Toast helper ─────────────────────────────────────────────────
 void showToast(BuildContext context, String message) {
   final overlay = Overlay.of(context, rootOverlay: true);
-  if (overlay == null) return;
 
   final entry = OverlayEntry(
     builder: (_) => Center(
@@ -258,7 +420,7 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge(this.status, {super.key});
 
   static const _labels = {
-    'active': '进行中', 'paused': '已暂停', 'done': '已完成',
+    'active': '进行中', 'paused': '已暂停', 'done': '已完成', 'completed': '已完成', 'terminated': '已终止',
   };
 
   @override

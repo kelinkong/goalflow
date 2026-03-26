@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@bddh/movie-editor-lib": "^2.0.14"
+  }
+}
