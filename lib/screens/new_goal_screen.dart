@@ -17,7 +17,8 @@ class NewGoalScreen extends StatefulWidget {
   State<NewGoalScreen> createState() => _NewGoalScreenState();
 }
 
-class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProviderStateMixin {
+class _NewGoalScreenState extends State<NewGoalScreen>
+    with SingleTickerProviderStateMixin {
   // step: form | loading | preview
   String _step = 'form';
   String _selectedEmoji = '🎯';
@@ -31,7 +32,20 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
   final List<String> _logs = [];
   late final AnimationController _pulseCtrl;
 
-  static const _emojis = ['🎯','📚','💪','🚀','🎨','💼','🌱','🏃','🎵','📝','💡','🔬'];
+  static const _emojis = [
+    '🎯',
+    '📚',
+    '💪',
+    '🚀',
+    '🎨',
+    '💼',
+    '🌱',
+    '🏃',
+    '🎵',
+    '📝',
+    '💡',
+    '🔬'
+  ];
   static const _dayOptions = [7, 14, 30, 60, 90];
   static const _taskCountOptions = [
     ('少', '1～2 个/天'),
@@ -63,17 +77,23 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
       _nameCtrl.text = initialGoal.name;
       _descCtrl.text = initialGoal.desc;
       _totalDays = initialGoal.totalDays;
-      _aiPlan = initialGoal.taskPlan.map((day) => List<String>.from(day)).toList();
+      _aiPlan =
+          initialGoal.taskPlan.map((day) => List<String>.from(day)).toList();
     }
   }
 
   void _addLog(String msg) {
     final ts = DateTime.now().toIso8601String().substring(11, 19);
-    setState(() { _logs.insert(0, '[$ts] $msg'); });
+    setState(() {
+      _logs.insert(0, '[$ts] $msg');
+    });
   }
 
   Future<void> _callAI() async {
-    setState(() { _step = 'loading'; _error = null; });
+    setState(() {
+      _step = 'loading';
+      _error = null;
+    });
     _addLog('开始调用 AI');
     _addLog('目标：${_nameCtrl.text.trim()} / ${_totalDays}天');
     final desc = _descCtrl.text.trim();
@@ -91,7 +111,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
         taskPlan: [],
       );
       final result = await context.read<AppState>().decompose(goalPreview);
-      _addLog('AI 返回成功：${result.taskPlan.length} 天计划 / ${result.phases.length} 个阶段');
+      _addLog(
+          'AI 返回成功：${result.taskPlan.length} 天计划 / ${result.phases.length} 个阶段');
       setState(() {
         _aiPlan = result.taskPlan;
         _phases = result.phases;
@@ -99,7 +120,10 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
       });
     } catch (e) {
       _addLog('AI 失败：${e.toString()}');
-      setState(() { _error = userErrorMessage(e); _step = 'form'; });
+      setState(() {
+        _error = userErrorMessage(e);
+        _step = 'form';
+      });
     }
   }
 
@@ -110,8 +134,6 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
       emoji: _selectedEmoji,
       desc: _descCtrl.text,
       totalDays: _aiPlan.isNotEmpty ? _aiPlan.length : _totalDays,
-      templateId: widget.initialGoal?.templateId,
-      joinRanking: widget.initialGoal?.joinRanking ?? false,
       status: widget.initialGoal?.status ?? 'active',
       createdAt: widget.initialGoal?.createdAt ?? DateTime.now(),
       taskTemplates: _aiPlan.isNotEmpty ? _aiPlan.first : const [],
@@ -147,7 +169,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text('取消')),
           TextButton(
             onPressed: () {
               final value = ctrl.text.trim();
@@ -180,7 +203,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text('取消')),
           TextButton(
             onPressed: () {
               final value = ctrl.text.trim();
@@ -212,7 +236,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
 
   Widget _buildPreviewBottomBar() {
     final state = context.watch<AppState>();
-    final saveActionKey = _isEditing ? 'goal:edit:${widget.initialGoal!.id}' : 'goal:create';
+    final saveActionKey =
+        _isEditing ? 'goal:edit:${widget.initialGoal!.id}' : 'goal:create';
     final isSaving = state.isActionPending(saveActionKey);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -233,11 +258,13 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
               onPressed: isSaving ? null : _callAI,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               child: Text(_isEditing ? '重新生成' : '重新生成',
-                  style: const TextStyle(color: AppColors.sub, fontWeight: FontWeight.w500)),
+                  style: const TextStyle(
+                      color: AppColors.sub, fontWeight: FontWeight.w500)),
             ),
           ),
           const SizedBox(width: 10),
@@ -249,7 +276,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                 backgroundColor: isSaving ? AppColors.border : AppColors.accent,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               child: isSaving
@@ -263,7 +291,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                     )
                   : Text(
                       _isEditing ? '保存修改' : '确认创建目标',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700),
                     ),
             ),
           ),
@@ -331,29 +360,38 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
             color: AppColors.white,
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
             margin: const EdgeInsets.only(bottom: 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Row(children: const [
-                  Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
+                  Icon(Icons.arrow_back_ios_new,
+                      size: 14, color: AppColors.sub),
                   SizedBox(width: 4),
-                  Text('返回', style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                  Text('返回',
+                      style: TextStyle(fontSize: 14, color: AppColors.sub)),
                 ]),
               ),
               const SizedBox(height: 18),
               Text(_isEditing ? '编辑目标' : '新建目标',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900,
-                      color: AppColors.text, letterSpacing: -0.5)),
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.text,
+                      letterSpacing: -0.5)),
               const SizedBox(height: 4),
               Text(_isEditing ? '调整目标信息，必要时重新生成任务' : '告诉 AI 你的目标和当前基础，它来拆解每日任务',
-                  style: const TextStyle(fontSize: 14, color: AppColors.sub,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.sub,
                       fontStyle: FontStyle.italic)),
             ]),
           ),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
-          sliver: SliverList(delegate: SliverChildListDelegate([
+          sliver: SliverList(
+              delegate: SliverChildListDelegate([
             if (_error != null) ...[
               Container(
                 padding: const EdgeInsets.all(14),
@@ -363,7 +401,9 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFFDEAEA)),
                 ),
-                child: Text(_error!, style: const TextStyle(fontSize: 13, color: AppColors.danger)),
+                child: Text(_error!,
+                    style:
+                        const TextStyle(fontSize: 13, color: AppColors.danger)),
               ),
             ],
             if (_logs.isNotEmpty) ...[
@@ -379,52 +419,75 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('AI 调用日志',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.sub)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.sub)),
                     const SizedBox(height: 8),
                     ..._logs.take(6).map((l) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(l, style: const TextStyle(fontSize: 12, color: AppColors.sub, height: 1.4)),
-                    )),
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(l,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.sub,
+                                  height: 1.4)),
+                        )),
                   ],
                 ),
               ),
             ],
-
             const SectionLabel('选择图标'),
             Container(
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.white, borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                ],
               ),
               child: Wrap(
-                spacing: 8, runSpacing: 8,
-                children: _emojis.map((e) => GestureDetector(
-                  onTap: () => setState(() => _selectedEmoji = e),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 38, height: 38,
-                    decoration: BoxDecoration(
-                      color: _selectedEmoji == e ? AppColors.pill : AppColors.white,
-                      border: Border.all(
-                        color: _selectedEmoji == e ? AppColors.accent : AppColors.border,
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(child: Text(e, style: const TextStyle(fontSize: 18))),
-                  ),
-                )).toList(),
+                spacing: 8,
+                runSpacing: 8,
+                children: _emojis
+                    .map((e) => GestureDetector(
+                          onTap: () => setState(() => _selectedEmoji = e),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: _selectedEmoji == e
+                                  ? AppColors.pill
+                                  : AppColors.white,
+                              border: Border.all(
+                                color: _selectedEmoji == e
+                                    ? AppColors.accent
+                                    : AppColors.border,
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                                child: Text(e,
+                                    style: const TextStyle(fontSize: 18))),
+                          ),
+                        ))
+                    .toList(),
               ),
             ),
-
             const SectionLabel('目标名称 *'),
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.white, borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                ],
               ),
               child: TextField(
                 controller: _nameCtrl,
@@ -438,19 +501,23 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                   hintText: '例如：备考英语四级',
                   hintStyle: TextStyle(color: AppColors.sub),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 18, vertical: 15),
                 ),
                 style: const TextStyle(fontSize: 15, color: AppColors.text),
               ),
             ),
-
             const SectionLabel('每日任务数量'),
             Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.white, borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                ],
               ),
               child: Column(
                 children: [
@@ -474,8 +541,12 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.white, borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                ],
               ),
               child: TextField(
                 controller: _descCtrl,
@@ -484,42 +555,53 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                   hintText: '例如：刚开始接触 / 已坚持一周 / 目前每天只能投入 15 分钟…',
                   hintStyle: TextStyle(color: AppColors.sub, fontSize: 14),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 18, vertical: 15),
                 ),
-                style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.6),
+                style: const TextStyle(
+                    fontSize: 14, color: AppColors.text, height: 1.6),
               ),
             ),
-
             const SectionLabel('挑战周期'),
             Row(
-              children: _dayOptions.map((d) => Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _totalDays = d),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    margin: EdgeInsets.only(right: d == _dayOptions.last ? 0 : 8),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _totalDays == d ? AppColors.accent : AppColors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: _totalDays == d ? AppColors.accent : AppColors.border,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text('${d}天',
-                        style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600,
-                          color: _totalDays == d ? Colors.white : AppColors.sub,
+              children: _dayOptions
+                  .map((d) => Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _totalDays = d),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            margin: EdgeInsets.only(
+                                right: d == _dayOptions.last ? 0 : 8),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _totalDays == d
+                                  ? AppColors.accent
+                                  : AppColors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: _totalDays == d
+                                    ? AppColors.accent
+                                    : AppColors.border,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${d}天',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _totalDays == d
+                                      ? Colors.white
+                                      : AppColors.sub,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-              )).toList(),
+                      ))
+                  .toList(),
             ),
             const SizedBox(height: 28),
-
             AccentButton(
               label: _isEditing ? '重新生成任务计划' : '让 AI 拆解每日任务',
               onTap: valid && !isCreating ? _callAI : null,
@@ -543,43 +625,52 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
             Stack(
               alignment: Alignment.center,
               children: [
-                ...List.generate(3, (i) => AnimatedBuilder(
-                  animation: _pulseCtrl,
-                  builder: (_, __) {
-                    final phase = (_pulseCtrl.value + i * 0.18) % 1.0;
-                    final opacity = 0.06 + (0.10 * (1 - phase));
-                    final scale = 1.0 + phase * 0.22;
-                    final size = 70.0 - i * 16;
-                    return Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: size,
-                        height: size,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.accent.withOpacity(opacity),
-                        ),
-                      ),
-                    );
-                  },
-                )),
+                ...List.generate(
+                    3,
+                    (i) => AnimatedBuilder(
+                          animation: _pulseCtrl,
+                          builder: (_, __) {
+                            final phase = (_pulseCtrl.value + i * 0.18) % 1.0;
+                            final opacity = 0.06 + (0.10 * (1 - phase));
+                            final scale = 1.0 + phase * 0.22;
+                            final size = 70.0 - i * 16;
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                width: size,
+                                height: size,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.accent.withOpacity(opacity),
+                                ),
+                              ),
+                            );
+                          },
+                        )),
                 Container(
-                  width: 44, height: 44,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.accent,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Center(child: Text(_selectedEmoji, style: const TextStyle(fontSize: 22))),
+                  child: Center(
+                      child: Text(_selectedEmoji,
+                          style: const TextStyle(fontSize: 22))),
                 ),
               ],
             ),
             const SizedBox(height: 28),
             const Text('AI 拆解中…',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.text)),
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.text)),
             const SizedBox(height: 10),
             Text('正在为「${_nameCtrl.text}」\n生成 $_totalDays 天每日任务计划',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.sub, height: 1.7)),
+                style: const TextStyle(
+                    fontSize: 14, color: AppColors.sub, height: 1.7)),
             if (_logs.isNotEmpty) ...[
               const SizedBox(height: 18),
               Container(
@@ -594,36 +685,53 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('AI 调用日志',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.sub)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.sub)),
                     const SizedBox(height: 6),
                     ..._logs.take(4).map((l) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(l, style: const TextStyle(fontSize: 12, color: AppColors.sub, height: 1.4)),
-                    )),
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(l,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.sub,
+                                  height: 1.4)),
+                        )),
                   ],
                 ),
               ),
             ],
             const SizedBox(height: 36),
-            ...['分析目标内容', '拆解每日任务', '生成执行计划'].asMap().entries.map((e) =>
-              Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.white, borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(children: [
-                  Container(
-                    width: 26, height: 26,
-                    decoration: BoxDecoration(color: AppColors.pill, shape: BoxShape.circle),
-                    child: Center(child: Text('${e.key + 1}',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.accent))),
+            ...['分析目标内容', '拆解每日任务', '生成执行计划'].asMap().entries.map(
+                  (e) => Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                            color: AppColors.pill, shape: BoxShape.circle),
+                        child: Center(
+                            child: Text('${e.key + 1}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.accent))),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(e.value,
+                          style: const TextStyle(
+                              fontSize: 14, color: AppColors.sub)),
+                    ]),
                   ),
-                  const SizedBox(width: 12),
-                  Text(e.value, style: const TextStyle(fontSize: 14, color: AppColors.sub)),
-                ]),
-              ),
-            ),
+                ),
           ],
         ),
       ),
@@ -644,54 +752,78 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
             color: AppColors.white,
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
             margin: const EdgeInsets.only(bottom: 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               GestureDetector(
                 onTap: () => setState(() => _step = 'form'),
                 child: Row(children: const [
-                  Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
+                  Icon(Icons.arrow_back_ios_new,
+                      size: 14, color: AppColors.sub),
                   SizedBox(width: 4),
-                  Text('重新填写', style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                  Text('重新填写',
+                      style: TextStyle(fontSize: 14, color: AppColors.sub)),
                 ]),
               ),
               const SizedBox(height: 18),
               Row(children: [
                 Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(color: AppColors.pill, borderRadius: BorderRadius.circular(16)),
-                  child: Center(child: Text(_selectedEmoji, style: const TextStyle(fontSize: 28))),
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                      color: AppColors.pill,
+                      borderRadius: BorderRadius.circular(16)),
+                  child: Center(
+                      child: Text(_selectedEmoji,
+                          style: const TextStyle(fontSize: 28))),
                 ),
                 const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(_nameCtrl.text,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.text)),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.text)),
                   const SizedBox(height: 3),
                   Text('$_totalDays 天挑战', style: AppTextStyles.caption),
                 ]),
               ]),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: AppColors.pill, borderRadius: BorderRadius.circular(20)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                    color: AppColors.pill,
+                    borderRadius: BorderRadius.circular(20)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Text('✦', style: TextStyle(fontSize: 12, color: AppColors.accent)),
+                  const Text('✦',
+                      style: TextStyle(fontSize: 12, color: AppColors.accent)),
                   const SizedBox(width: 6),
                   Text('${_isEditing ? '当前' : 'AI 已生成'} ${_aiPlan.length} 天计划',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent)),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent)),
                 ]),
               ),
               if (filters.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Wrap(
-                  spacing: 6, runSpacing: 6,
-                  children: filters.map((f) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(f, style: const TextStyle(fontSize: 11, color: AppColors.sub)),
-                  )).toList(),
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: filters
+                      .map((f) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Text(f,
+                                style: const TextStyle(
+                                    fontSize: 11, color: AppColors.sub)),
+                          ))
+                      .toList(),
                 ),
               ],
             ]),
@@ -699,7 +831,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
-          sliver: SliverList(delegate: SliverChildListDelegate([
+          sliver: SliverList(
+              delegate: SliverChildListDelegate([
             const SectionLabel('任务计划'),
             if (_phases.isNotEmpty) ...[
               const SectionLabel('阶段计划'),
@@ -708,7 +841,10 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)],
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.04), blurRadius: 12)
+                  ],
                 ),
                 child: Column(
                   children: _phases.asMap().entries.map((entry) {
@@ -718,7 +854,8 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                       decoration: BoxDecoration(
                         border: entry.key == _phases.length - 1
                             ? null
-                            : const Border(bottom: BorderSide(color: AppColors.border)),
+                            : const Border(
+                                bottom: BorderSide(color: AppColors.border)),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,7 +870,10 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                             child: Center(
                               child: Text(
                                 '${entry.key + 1}',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accent),
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.accent),
                               ),
                             ),
                           ),
@@ -744,12 +884,18 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                               children: [
                                 Text(
                                   '${phase.title} · 第 ${phase.startDay}-${phase.endDay} 天',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.text),
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.text),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   phase.focus,
-                                  style: const TextStyle(fontSize: 13, color: AppColors.sub, height: 1.6),
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.sub,
+                                      height: 1.6),
                                 ),
                               ],
                             ),
@@ -765,8 +911,12 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.white, borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)],
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04), blurRadius: 12)
+                ],
               ),
               child: Column(
                 children: _aiPlan.asMap().entries.map((e) {
@@ -779,17 +929,22 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                         child: Row(
                           children: [
                             Container(
-                              width: 20, height: 20,
+                              width: 20,
+                              height: 20,
                               decoration: BoxDecoration(
                                 color: AppColors.pill,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Center(
-                                child: Text('$dayNum', style: const TextStyle(fontSize: 11, color: AppColors.sub)),
+                                child: Text('$dayNum',
+                                    style: const TextStyle(
+                                        fontSize: 11, color: AppColors.sub)),
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Text('第 $dayNum 天', style: const TextStyle(fontSize: 13, color: AppColors.sub)),
+                            Text('第 $dayNum 天',
+                                style: const TextStyle(
+                                    fontSize: 13, color: AppColors.sub)),
                             const Spacer(),
                             TextButton(
                               onPressed: () => _addTask(e.key),
@@ -799,47 +954,74 @@ class _NewGoalScreenState extends State<NewGoalScreen> with SingleTickerProvider
                         ),
                       ),
                       ...tasks.asMap().entries.map((t) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                        child: Row(children: [
-                          Container(
-                            width: 20, height: 20,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.border, width: 1.5),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(child: Text(t.value, style: const TextStyle(fontSize: 15, color: AppColors.text, height: 1.5))),
-                          IconButton(
-                            onPressed: () => _editTask(e.key, t.key),
-                            icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.sub),
-                          ),
-                          IconButton(
-                            onPressed: tasks.length <= 1 ? null : () => _removeTask(e.key, t.key),
-                            icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.danger),
-                          ),
-                        ]),
-                      )),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 8),
+                            child: Row(children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: AppColors.border, width: 1.5),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                  child: Text(t.value,
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          color: AppColors.text,
+                                          height: 1.5))),
+                              IconButton(
+                                onPressed: () => _editTask(e.key, t.key),
+                                icon: const Icon(Icons.edit_outlined,
+                                    size: 18, color: AppColors.sub),
+                              ),
+                              IconButton(
+                                onPressed: tasks.length <= 1
+                                    ? null
+                                    : () => _removeTask(e.key, t.key),
+                                icon: const Icon(Icons.delete_outline,
+                                    size: 18, color: AppColors.danger),
+                              ),
+                            ]),
+                          )),
                       if (e.key < (_aiPlan.length - 1))
-                        Divider(height: 1, color: AppColors.border, indent: 52, endIndent: 18),
+                        Divider(
+                            height: 1,
+                            color: AppColors.border,
+                            indent: 52,
+                            endIndent: 18),
                     ],
                   );
                 }).toList(),
               ),
             ),
-
             Container(
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: AppColors.white, borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.03), blurRadius: 6)
+                ],
               ),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Container(width: 3, height: 34, decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(2))),
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                    width: 3,
+                    height: 34,
+                    decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 12),
-                Expanded(child: Text('计划会覆盖 $_totalDays 天，并随天数循序渐进',
-                    style: const TextStyle(fontSize: 13, color: AppColors.sub, height: 1.65))),
+                Expanded(
+                    child: Text('计划会覆盖 $_totalDays 天，并随天数循序渐进',
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.sub, height: 1.65))),
               ]),
             ),
           ])),

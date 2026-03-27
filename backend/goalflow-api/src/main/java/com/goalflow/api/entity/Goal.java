@@ -26,8 +26,6 @@ public class Goal {
     private String description;
     
     private Integer totalDays;
-    private Long templateId;
-    private Boolean joinRanking;
 
     private String status;
 

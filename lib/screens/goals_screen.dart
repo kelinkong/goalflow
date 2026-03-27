@@ -6,7 +6,6 @@ import '../services/app_state.dart';
 import '../widgets/common.dart';
 import 'goal_detail_screen.dart';
 import 'new_goal_screen.dart';
-import 'templates_screen.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -14,7 +13,26 @@ class GoalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final goals = state.goals;
+    final goals = state.goals.where((g) => g.isActive).toList();
+    
+    // 计算统计数据
+    int totalTasks = 0;
+    int doneTasks = 0;
+    for (final g in goals) {
+      totalTasks += state.goalTotalTaskCount(g);
+      doneTasks += state.goalDoneTaskCount(g);
+    }
+    
+    // 计算连击 (简化版，复用逻辑)
+    int streak = 0;
+    var cursor = DateTime.now();
+    while (true) {
+      final date = DateTime(cursor.year, cursor.month, cursor.day);
+      final tasks = goals.expand((g) => state.taskViewsForDate(g, date));
+      if (!tasks.any((t) => t.done)) break;
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -24,14 +42,39 @@ class GoalsScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('目标', style: AppTextStyles.headline),
-                    const SizedBox(height: 4),
-                    Text('管理你的长期计划',
-                        style: AppTextStyles.caption.copyWith(
-                            fontStyle: FontStyle.italic, fontSize: 14)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('目标', style: AppTextStyles.headline),
+                          const SizedBox(height: 4),
+                          Text('把大愿望拆解成小步子',
+                              style: AppTextStyles.caption.copyWith(
+                                  fontStyle: FontStyle.italic, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NewGoalScreen()),
+                      ),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(21),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)
+                          ],
+                        ),
+                        child: const Icon(Icons.add_rounded, size: 24, color: AppColors.text),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -39,48 +82,30 @@ class GoalsScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _NewGoalButton(
-                        label: '新建目标',
-                        accent: true,
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => const NewGoalScreen(),
-                          ));
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _NewGoalButton(
-                        label: '模板库',
-                        accent: false,
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => const TemplatesScreen(),
-                          ));
-                        },
-                      ),
-                    ),
-                  ],
+                child: _GoalSummaryCard(
+                  doneTasks: doneTasks,
+                  totalTasks: totalTasks,
+                  streak: streak,
                 ),
               ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => _GoalCard(
-                    goal: goals[i],
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => GoalDetailScreen(goalId: goals[i].id),
-                    )),
-                  ),
-                  childCount: goals.length,
-                ),
-              ),
+              sliver: goals.isEmpty
+                  ? const SliverToBoxAdapter(child: _EmptyGoals())
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) => _GoalCard(
+                          goal: goals[i],
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => GoalDetailScreen(goalId: goals[i].id),
+                              )),
+                        ),
+                        childCount: goals.length,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -89,123 +114,122 @@ class GoalsScreen extends StatelessWidget {
   }
 }
 
-class _NewGoalButton extends StatelessWidget {
-  final String label;
-  final bool accent;
-  final VoidCallback onTap;
-  const _NewGoalButton({
-    required this.label,
-    required this.accent,
-    required this.onTap,
+class _GoalSummaryCard extends StatelessWidget {
+  final int doneTasks;
+  final int totalTasks;
+  final int streak;
+
+  const _GoalSummaryCard({
+    required this.doneTasks,
+    required this.totalTasks,
+    required this.streak,
   });
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: accent ? AppColors.accent : AppColors.white,
-        borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  accent ? Icons.add : Icons.dashboard_customize_rounded,
-                  color: accent ? Colors.white : AppColors.accent,
-                  size: 20,
-                ),
-                SizedBox(width: 6),
-                Text(label,
-                    style: TextStyle(
-                        color: accent ? Colors.white : AppColors.accent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700)),
-              ],
-            ),
-          ),
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12),
+        ],
+      ),
+      child: Row(
+        children: [
+          _MiniGoalStat(label: '今日完成', value: '$doneTasks'),
+          const SizedBox(width: 10),
+          _MiniGoalStat(label: '任务总数', value: '$totalTasks'),
+          const SizedBox(width: 10),
+          _MiniGoalStat(label: '最长连续', value: '${streak}天'),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniGoalStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MiniGoalStat({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.bg,
+          borderRadius: BorderRadius.circular(18),
         ),
-      );
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: AppTextStyles.caption),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyGoals extends StatelessWidget {
+  const _EmptyGoals();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.pill,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(Icons.track_changes_rounded, color: AppColors.text),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '还没有目标',
+            style: AppTextStyles.title.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '点击右上角创建一个目标，让 AI 帮你拆解成可执行的小任务。',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.caption.copyWith(fontSize: 13, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _GoalCard extends StatelessWidget {
   final Goal goal;
   final VoidCallback onTap;
   const _GoalCard({required this.goal, required this.onTap});
-
-  Future<void> _saveAsTemplate(BuildContext context) async {
-    final tagsCtrl = TextEditingController();
-    bool isPublic = false;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('保存为模板', style: AppTextStyles.headline),
-                    const SizedBox(height: 8),
-                    Text('模板会复用当前目标的逐日计划，适合稳定的可复制方案', style: AppTextStyles.caption),
-                    const SizedBox(height: 16),
-                    const SectionLabel('标签'),
-                    FormInput(controller: tagsCtrl, hintText: '例如：英语,晨间,30天'),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.bg,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text('提交公开模板审核', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                          ),
-                          Switch(
-                            value: isPublic,
-                            onChanged: (value) => setModalState(() => isPublic = value),
-                            activeColor: AppColors.accent,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    AccentButton(
-                      label: '保存模板',
-                      onTap: () async {
-                        await context.read<AppState>().createTemplateFromGoal(
-                              goal,
-                              isPublic: isPublic,
-                              tags: tagsCtrl.text,
-                            );
-                        if (!context.mounted) return;
-                        Navigator.pop(context);
-                        showToast(context, isPublic ? '模板已提交审核' : '模板已保存为私有模板');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-    tagsCtrl.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,80 +240,67 @@ class _GoalCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14)
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
-                        color: AppColors.pill,
-                        borderRadius: BorderRadius.circular(14)),
-                    child: Center(
-                        child: Text(goal.emoji,
-                            style: const TextStyle(fontSize: 22))),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(goal.name,
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.text)),
-                        const SizedBox(height: 3),
-                        Text('剩余 ${goal.remainingDays} 天',
-                            style: AppTextStyles.caption),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _saveAsTemplate(context),
-                    child: Container(
-                      width: 34,
-                      height: 34,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.bg,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.bookmark_add_outlined, size: 18, color: AppColors.sub),
-                    ),
-                  ),
-                  StatusBadge(goal.status),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.chevron_right, color: AppColors.sub, size: 18),
-                ],
-              ),
-              const SizedBox(height: 14),
-              GoalProgressBar(progress: progressPercent / 100),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('$doneTasks/$totalTasks 任务',
-                      style: AppTextStyles.caption),
-                  Text('${progressPercent}%',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.accent)),
-                ],
-              ),
-            ],
-          ),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14)
+          ],
         ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                      color: AppColors.pill,
+                      borderRadius: BorderRadius.circular(14)),
+                  child: Center(
+                      child: Text(goal.emoji,
+                          style: const TextStyle(fontSize: 22))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(goal.name,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.text)),
+                      const SizedBox(height: 3),
+                      Text('剩余 ${goal.remainingDays} 天',
+                          style: AppTextStyles.caption),
+                    ],
+                  ),
+                ),
+                StatusBadge(goal.status),
+                const SizedBox(width: 6),
+                const Icon(Icons.chevron_right, color: AppColors.sub, size: 18),
+              ],
+            ),
+            const SizedBox(height: 14),
+            GoalProgressBar(progress: progressPercent / 100),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('$doneTasks/$totalTasks 任务', style: AppTextStyles.caption),
+                Text('${progressPercent}%',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accent)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

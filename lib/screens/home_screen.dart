@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../models/habit.dart';
 import '../theme.dart';
 import '../models/goal.dart';
 import '../services/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/completion_ceremony.dart';
+import 'habits_screen.dart';
 import 'daily_review_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context
           .read<AppState>()
           .fetchDailyReviewCalendar(_selectedDate, silent: true);
+      context.read<AppState>().fetchHabitCalendar(_selectedDate, silent: true);
     });
   }
 
@@ -60,16 +63,58 @@ class _HomeScreenState extends State<HomeScreen> {
           slivers: [
             SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(child: _buildWeekStrip()),
+
+            // 支柱一：今日习惯
+            SliverToBoxAdapter(
+              child: _buildSectionTitle('今日习惯', '🔄'),
+            ),
+            SliverToBoxAdapter(child: _buildHabitCard(state)),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+            // 支柱二：今日复盘
+            SliverToBoxAdapter(
+              child: _buildSectionTitle('今日复盘', '📝'),
+            ),
             SliverToBoxAdapter(child: _buildDailyReviewCard(state)),
-            SliverToBoxAdapter(child: _buildTabs(state, goals)),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+            // 支柱三：今日目标 (只看待办)
+            SliverToBoxAdapter(
+              child: _buildSectionTitle('今日目标', '🎯'),
+            ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildTaskList(state, goals),
               ),
             ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, String emoji) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 12),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: AppTextStyles.title.copyWith(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+              color: AppColors.text.withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -149,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context
                     .read<AppState>()
                     .fetchDailyReviewCalendar(date, silent: true);
+                context.read<AppState>().fetchHabitCalendar(date, silent: true);
               },
               child: Column(
                 children: [
@@ -259,43 +305,32 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDailyReviewCard(AppState state) {
     final hasReview = state.hasReviewOn(_selectedDate);
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14)
         ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: hasReview ? AppColors.accent : AppColors.pill,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              hasReview ? Icons.check_rounded : Icons.edit_note_rounded,
-              color: hasReview ? Colors.white : AppColors.text,
-            ),
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasReview ? '今日复盘已完成' : '今日复盘',
-                  style: AppTextStyles.title.copyWith(fontSize: 16),
+                  hasReview ? '今日复盘已完成' : '去复盘',
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  hasReview ? '可以回看今天四个维度的状态，也可以继续修改。' : '花一分钟复盘工作、健康、人际关系和爱好。',
-                  style:
-                      AppTextStyles.caption.copyWith(fontSize: 12, height: 1.5),
+                  hasReview ? '记录了生活，就留住了时间。' : '理解今天，开启明天。',
+                  style: AppTextStyles.caption.copyWith(fontSize: 12),
                 ),
               ],
             ),
@@ -321,8 +356,89 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: Text(hasReview ? '查看 / 编辑' : '开始复盘'),
+            child: Text(hasReview ? '查看' : '开始'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitCard(AppState state) {
+    final habits = state.activeHabitsForDate(_selectedDate);
+    final doneCount = habits.where((habit) => habit.todayDone).length;
+    final totalCount = habits.length;
+    final displayHabits = habits.take(3).toList(growable: false);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14)
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '今日习惯',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.text),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      totalCount == 0
+                          ? '还没有习惯记录'
+                          : '已完成 $doneCount / $totalCount',
+                      style: AppTextStyles.caption.copyWith(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final appState = context.read<AppState>();
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const HabitsScreen()),
+                  );
+                  if (!mounted) return;
+                  await appState.fetchHabits(silent: true);
+                  await appState.fetchHabitCalendar(_selectedDate,
+                      silent: true);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.text,
+                  backgroundColor: AppColors.pill,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text('管理'),
+              ),
+            ],
+          ),
+          if (displayHabits.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            ...displayHabits.asMap().entries.map((entry) {
+              final habit = entry.value;
+              return _HabitQuickTile(
+                habit: habit,
+                date: _selectedDate,
+                showDivider: entry.key < displayHabits.length - 1,
+              );
+            }),
+          ],
         ],
       ),
     );
@@ -330,28 +446,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTaskList(AppState state, List<Goal> goals) {
     if (goals.isEmpty) {
-      return _EmptyState(message: '还没有目标，去添加一个吧 🎯');
+      return const _EmptyState(message: '还没有创建目标，去看看你想做成一件什么事。');
     }
 
-    final displayGoals = goals.where((g) {
+    final pendingGoals = goals.where((g) {
       final items = state.taskViewsForDate(g, _selectedDate);
-      if (_tab == 0) return items.any((t) => !t.done && !t.deferred);
-      if (_tab == 1) return items.any((t) => t.done);
-      return items.any((t) => !t.done && t.deferred);
+      return items.any((t) => !t.done && !t.deferred);
     }).toList();
 
-    if (displayGoals.isEmpty) {
-      final msgs = ['今天没有任务', '暂无已完成任务', '暂无顺延任务'];
-      return _EmptyState(message: msgs[_tab]);
+    if (pendingGoals.isEmpty) {
+      return _EmptyState(message: '今日目标已全部达成 ✨');
     }
 
     return Column(
-      children: displayGoals.map<Widget>((g) {
+      children: pendingGoals.map<Widget>((g) {
         return _GoalSection(
           key: ValueKey(g.id),
           goal: g,
           selectedDate: _selectedDate,
-          tab: _tab,
+          tab: 0, // 强制显示待完成
         );
       }).toList(),
     );
@@ -374,6 +487,103 @@ class _GoalSection extends StatefulWidget {
   State<_GoalSection> createState() => _GoalSectionState();
 }
 
+class _HabitQuickTile extends StatelessWidget {
+  final Habit habit;
+  final DateTime date;
+  final bool showDivider;
+
+  const _HabitQuickTile({
+    required this.habit,
+    required this.date,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final isDone = habit.todayDone == true;
+    final isToday = DateTime(date.year, date.month, date.day) ==
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    await context.read<AppState>().toggleHabit(habit, date);
+                    if (!context.mounted) return;
+                    showToast(context, isDone ? '已取消打卡' : '已完成习惯');
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    showToast(context, userErrorMessage(e));
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  child: CheckGlyph(
+                    checked: isDone,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      habit.name.toString(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isDone ? AppColors.sub : AppColors.text,
+                        decoration: isDone ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      habit.category?.toString().isNotEmpty == true
+                          ? habit.category.toString()
+                          : (isToday ? '今天完成一次就够' : '这一天的习惯记录'),
+                      style: AppTextStyles.caption
+                          .copyWith(fontSize: 11, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDone ? AppColors.accentLight : AppColors.bg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${state.habitStreak(habit)}天',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDone ? AppColors.accent : AppColors.sub,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.border,
+          ),
+      ],
+    );
+  }
+}
+
 class _GoalSectionState extends State<_GoalSection> {
   bool _collapsed = false;
 
@@ -382,7 +592,7 @@ class _GoalSectionState extends State<_GoalSection> {
       final result = await state.toggleTaskByKey(task.key);
       if (!mounted) return;
       if (result.goalCompleted) {
-        showToast(context, '目标已完成，已获得勋章');
+        showToast(context, '目标已完成');
         showCompletionCeremony(context);
       } else {
         showToast(context, task.done ? '已取消完成' : '已完成任务');

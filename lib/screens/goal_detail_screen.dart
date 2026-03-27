@@ -9,7 +9,6 @@ import '../services/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/completion_ceremony.dart';
 import 'new_goal_screen.dart';
-import 'template_ranking_screen.dart';
 
 class GoalDetailScreen extends StatefulWidget {
   final String goalId;
@@ -78,7 +77,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               children: const [
                 Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
                 SizedBox(width: 4),
-                Text('返回', style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                Text('返回',
+                    style: TextStyle(fontSize: 14, color: AppColors.sub)),
               ],
             ),
           ),
@@ -87,11 +87,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 50, height: 50,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                     color: AppColors.pill,
                     borderRadius: BorderRadius.circular(16)),
-                child: Center(child: Text(goal.emoji, style: const TextStyle(fontSize: 26))),
+                child: Center(
+                    child:
+                        Text(goal.emoji, style: const TextStyle(fontSize: 26))),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -100,14 +103,16 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   children: [
                     Text(goal.name,
                         style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w900,
-                            color: AppColors.text, letterSpacing: -0.5)),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.text,
+                            letterSpacing: -0.5)),
                     const SizedBox(height: 3),
                     Text(goal.desc, style: AppTextStyles.caption),
                   ],
                 ),
               ),
-              if (goal.templateId == null && !goal.isDone) ...[
+              if (!goal.isDone) ...[
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -118,13 +123,18 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
                       color: AppColors.pill,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('编辑', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.accent)),
+                    child: const Text('编辑',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accent)),
                   ),
                 ),
               ],
@@ -135,11 +145,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$doneTasks/$totalTasks 任务',
-                  style: AppTextStyles.caption),
+              Text('$doneTasks/$totalTasks 任务', style: AppTextStyles.caption),
               Text('${progressPercent}%',
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.accent)),
             ],
           ),
@@ -151,34 +161,17 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                if (goal.templateId != null && goal.joinRanking) ...[
-                  Expanded(
-                    child: _ActionBtn(
-                      label: '模板排行',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TemplateRankingScreen(
-                              templateId: goal.templateId!,
-                              templateName: goal.name,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
                 Expanded(
                   child: _ActionBtn(
                     label: goal.isPaused ? '恢复目标' : '暂停目标',
                     onTap: () async {
                       final newStatus = goal.isPaused ? 'active' : 'paused';
-                      final ok = await context.read<AppState>()
+                      final ok = await context
+                          .read<AppState>()
                           .updateGoalStatus(goal.id, newStatus);
                       if (mounted && ok) {
-                        showToast(context, newStatus == 'active' ? '目标已恢复' : '目标已暂停');
+                        showToast(
+                            context, newStatus == 'active' ? '目标已恢复' : '目标已暂停');
                       }
                     },
                   ),
@@ -191,7 +184,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     onTap: () async {
                       final ok = await _confirmEnd(context);
                       if (ok && mounted) {
-                        final updated = await context.read<AppState>().updateGoalStatus(goal.id, 'terminated');
+                        final updated = await context
+                            .read<AppState>()
+                            .updateGoalStatus(goal.id, 'terminated');
                         if (mounted && updated) Navigator.pop(context);
                       }
                     },
@@ -211,49 +206,66 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)
+          ],
         ),
         child: Row(
-          children: ['今日任务', '全部时间轴'].asMap().entries.map((e) => Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _tab = e.key),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _tab == e.key ? AppColors.accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(e.value,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: _tab == e.key ? FontWeight.w700 : FontWeight.w400,
-                    color: _tab == e.key ? Colors.white : AppColors.sub,
-                  ),
-                ),
-              ),
-            ),
-          )).toList(),
+          children: ['今日任务', '全部时间轴']
+              .asMap()
+              .entries
+              .map((e) => Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _tab = e.key),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _tab == e.key
+                              ? AppColors.accent
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          e.value,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: _tab == e.key
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: _tab == e.key ? Colors.white : AppColors.sub,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ))
+              .toList(),
         ),
       );
 
   Future<bool> _confirmEnd(BuildContext context) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('终止目标', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text('终止后将保留历史记录，但不可恢复。确认终止吗？'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('终止', style: TextStyle(color: AppColors.danger)),
+          context: context,
+          builder: (_) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('终止目标',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+            content: const Text('终止后将保留历史记录，但不可恢复。确认终止吗？'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('取消')),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child:
+                    const Text('终止', style: TextStyle(color: AppColors.danger)),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 }
 
@@ -301,7 +313,8 @@ class _TodayTab extends StatelessWidget {
     final state = context.watch<AppState>();
     final tasks = state.taskViewsForDate(goal, DateTime.now());
     if (tasks.isEmpty) {
-      return const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('今天没有任务')));
+      return const Center(
+          child: Padding(padding: EdgeInsets.all(40), child: Text('今天没有任务')));
     }
 
     return Padding(
@@ -314,7 +327,9 @@ class _TodayTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)
+              ],
             ),
             child: Column(
               children: tasks.asMap().entries.map<Widget>((e) {
@@ -325,7 +340,9 @@ class _TodayTab extends StatelessWidget {
                   deferred: task.deferred,
                   isMakeup: task.isMakeup,
                   onToggle: () => _handleToggleTask(context, state, task),
-                  onDefer: !task.done ? () => _handleDeferTask(context, state, task) : null,
+                  onDefer: !task.done
+                      ? () => _handleDeferTask(context, state, task)
+                      : null,
                   showDivider: e.key < tasks.length - 1,
                 );
               }).toList(),
@@ -355,13 +372,17 @@ class _MiniCalendar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)
+            ],
           ),
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 10, mainAxisSpacing: 5, crossAxisSpacing: 5,
+              crossAxisCount: 10,
+              mainAxisSpacing: 5,
+              crossAxisSpacing: 5,
             ),
             itemCount: goal.totalDays,
             itemBuilder: (context, i) {
@@ -391,8 +412,12 @@ class _MiniCalendar extends StatelessWidget {
               return Container(
                 decoration: BoxDecoration(
                     color: bg, borderRadius: BorderRadius.circular(7)),
-                child: Center(child: Text(label,
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: fg))),
+                child: Center(
+                    child: Text(label,
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: fg))),
               );
             },
           ),
@@ -425,7 +450,9 @@ class _TimelineTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,14 +460,19 @@ class _TimelineTab extends StatelessWidget {
                 Row(
                   children: [
                     Text('Day $dayNum · $dateText',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.text)),
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text)),
                     const Spacer(),
-                    Text('$doneCount/${tasks.length}', style: AppTextStyles.caption),
+                    Text('$doneCount/${tasks.length}',
+                        style: AppTextStyles.caption),
                   ],
                 ),
                 const SizedBox(height: 8),
                 if (tasks.isEmpty)
-                  const Text('无任务', style: TextStyle(fontSize: 12, color: AppColors.sub))
+                  const Text('无任务',
+                      style: TextStyle(fontSize: 12, color: AppColors.sub))
                 else
                   ...tasks.map((task) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
@@ -449,7 +481,8 @@ class _TimelineTab extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             color: task.done ? AppColors.sub : AppColors.text,
-                            decoration: task.done ? TextDecoration.lineThrough : null,
+                            decoration:
+                                task.done ? TextDecoration.lineThrough : null,
                           ),
                         ),
                       )),
@@ -466,7 +499,8 @@ class _ActionBtn extends StatefulWidget {
   final String label;
   final FutureOr<void> Function() onTap;
   final bool danger;
-  const _ActionBtn({required this.label, required this.onTap, this.danger = false});
+  const _ActionBtn(
+      {required this.label, required this.onTap, this.danger = false});
 
   @override
   State<_ActionBtn> createState() => _ActionBtnState();
@@ -516,6 +550,6 @@ class _ActionBtnState extends State<_ActionBtn> {
                     ),
             ),
           ),
-      ),
-    );
+        ),
+      );
 }

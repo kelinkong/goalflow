@@ -35,8 +35,6 @@ public class GoalTrackingService {
     private final DayRecordMapper dayRecordMapper;
     private final TaskRecordMapper taskRecordMapper;
     private final EntityValidationService validationService;
-    private final RankingService rankingService;
-    private final MedalService medalService;
 
     public List<TimelineDayDTO> getTimeline(User user, Long goalId) {
         Goal goal = validationService.requireOwnedGoal(user.getId(), goalId);
@@ -252,11 +250,9 @@ public class GoalTrackingService {
                         .eq("is_done", true)
         ).intValue();
         int progressPercent = totalTasks == 0 ? 0 : (int) Math.round((doneTasks * 100.0) / totalTasks);
-        rankingService.syncGoalProgress(goal, progressPercent);
         if (progressPercent >= 100 && !"COMPLETED".equalsIgnoreCase(goal.getStatus())) {
             goal.setStatus("COMPLETED");
             goalMapper.updateById(goal);
-            medalService.awardGoalCompletionMedal(goal);
         }
     }
 

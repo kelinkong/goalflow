@@ -4,8 +4,6 @@ class Goal {
   late String emoji;
   late String desc;
   late int totalDays;
-  String? templateId;
-  bool joinRanking;
   late int completedDays;
   late String status; // active | paused | done
   late DateTime createdAt;
@@ -22,8 +20,6 @@ class Goal {
     required this.emoji,
     required this.desc,
     required this.totalDays,
-    this.templateId,
-    this.joinRanking = false,
     this.completedDays = 0,
     this.status = 'active',
     required this.createdAt,
@@ -33,9 +29,9 @@ class Goal {
     this.taskCount,
     List<String>? constraints,
     List<int>? weeklyRestWeekdays,
-  }) : taskPlan = taskPlan ?? const [],
-       constraints = constraints ?? const [],
-       weeklyRestWeekdays = weeklyRestWeekdays ?? const [];
+  })  : taskPlan = taskPlan ?? const [],
+        constraints = constraints ?? const [],
+        weeklyRestWeekdays = weeklyRestWeekdays ?? const [];
 
   factory Goal.fromJson(Map<String, dynamic> json) {
     return Goal(
@@ -44,14 +40,15 @@ class Goal {
       emoji: json['emoji'] ?? '🎯',
       desc: json['description'] ?? '',
       totalDays: json['totalDays'],
-      templateId: json['templateId']?.toString(),
-      joinRanking: json['joinRanking'] == true,
       status: (json['status'] ?? 'active').toString().toLowerCase(),
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
       taskTemplates: [], // Not used when taskPlan is present
-      taskPlan: (json['taskPlan'] as List?)?.map((e) => (e as List).cast<String>()).toList() ?? [],
+      taskPlan: (json['taskPlan'] as List?)
+              ?.map((e) => (e as List).cast<String>())
+              .toList() ??
+          [],
     );
   }
 
@@ -62,8 +59,6 @@ class Goal {
       'emoji': emoji,
       'description': desc,
       'totalDays': totalDays,
-      if (templateId != null) 'templateId': int.tryParse(templateId!),
-      'joinRanking': joinRanking,
       'status': status.toUpperCase(),
       if (taskCount != null) 'taskCount': taskCount,
       'createdAt': createdAt.toIso8601String(),
@@ -77,11 +72,11 @@ class Goal {
 
   bool get isActive => status == 'active';
   bool get isPaused => status == 'paused';
-  bool get isDone => status == 'done' || status == 'completed' || status == 'terminated';
+  bool get isDone =>
+      status == 'done' || status == 'completed' || status == 'terminated';
 
   // The date for day N (1-based)
-  DateTime dateForDay(int day) =>
-      createdAt.add(Duration(days: day - 1));
+  DateTime dateForDay(int day) => createdAt.add(Duration(days: day - 1));
 
   // Which day number is today? (1-based, null if not in range)
   int? get todayDayNumber => dayNumberForDate(DateTime.now());
@@ -113,8 +108,6 @@ class Goal {
     String? emoji,
     String? desc,
     int? totalDays,
-    String? templateId,
-    bool? joinRanking,
     int? completedDays,
     String? status,
     DateTime? createdAt,
@@ -131,17 +124,17 @@ class Goal {
       emoji: emoji ?? this.emoji,
       desc: desc ?? this.desc,
       totalDays: totalDays ?? this.totalDays,
-      templateId: templateId ?? this.templateId,
-      joinRanking: joinRanking ?? this.joinRanking,
       completedDays: completedDays ?? this.completedDays,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       taskTemplates: taskTemplates ?? List<String>.from(this.taskTemplates),
-      taskPlan: taskPlan ?? this.taskPlan.map((day) => List<String>.from(day)).toList(),
+      taskPlan: taskPlan ??
+          this.taskPlan.map((day) => List<String>.from(day)).toList(),
       difficulty: difficulty ?? this.difficulty,
       taskCount: taskCount ?? this.taskCount,
       constraints: constraints ?? List<String>.from(this.constraints),
-      weeklyRestWeekdays: weeklyRestWeekdays ?? List<int>.from(this.weeklyRestWeekdays),
+      weeklyRestWeekdays:
+          weeklyRestWeekdays ?? List<int>.from(this.weeklyRestWeekdays),
     );
   }
 }

@@ -70,7 +70,9 @@ class _FormInputState extends State<FormInput> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -90,7 +92,8 @@ class _FormInputState extends State<FormInput> {
                 ? GestureDetector(
                     onTap: () {
                       widget.controller.clear();
-                      setState(() {}); // Trigger rebuild to hide the clear button
+                      setState(
+                          () {}); // Trigger rebuild to hide the clear button
                     },
                     child: const Padding(
                       padding: EdgeInsets.only(right: 0),
@@ -98,9 +101,11 @@ class _FormInputState extends State<FormInput> {
                     ),
                   )
                 : null,
-            suffixIconConstraints: const BoxConstraints(minWidth: 24, maxHeight: 24),
+            suffixIconConstraints:
+                const BoxConstraints(minWidth: 24, maxHeight: 24),
           ),
-          style: const TextStyle(fontSize: 15, color: AppColors.text, letterSpacing: 1),
+          style: const TextStyle(
+              fontSize: 15, color: AppColors.text, letterSpacing: 1),
         ),
       ),
     );
@@ -136,6 +141,85 @@ class AppCard extends StatelessWidget {
             child: child,
           ),
         ),
+      );
+}
+
+class StatusGlyph extends StatelessWidget {
+  final IconData icon;
+  final bool active;
+  final double size;
+  final double iconSize;
+
+  const StatusGlyph({
+    super.key,
+    required this.icon,
+    this.active = false,
+    this.size = 42,
+    this.iconSize = 20,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: active ? AppColors.accent : AppColors.accentLight,
+          borderRadius: BorderRadius.circular(size * 0.33),
+          border: Border.all(
+            color: active ? AppColors.accent : AppColors.border,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: iconSize,
+          color: active ? Colors.white : AppColors.text,
+        ),
+      );
+}
+
+class CheckGlyph extends StatelessWidget {
+  final bool checked;
+  final bool pending;
+  final double size;
+  final double iconSize;
+
+  const CheckGlyph({
+    super.key,
+    required this.checked,
+    this.pending = false,
+    this.size = 22,
+    this.iconSize = 14,
+  });
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: checked ? AppColors.accent : Colors.transparent,
+          border: Border.all(
+            color: checked ? AppColors.accent : AppColors.border,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(size * 0.32),
+        ),
+        child: pending
+            ? SizedBox(
+                width: iconSize,
+                height: iconSize,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : checked
+                ? Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: iconSize,
+                  )
+                : null,
       );
 }
 
@@ -204,29 +288,9 @@ class _TaskCheckTileState extends State<TaskCheckTile> {
                 // Checkbox
                 GestureDetector(
                   onTap: _runToggle,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 22, height: 22,
-                    decoration: BoxDecoration(
-                      color: widget.done ? AppColors.accent : Colors.transparent,
-                      border: Border.all(
-                        color: widget.done ? AppColors.accent : AppColors.border,
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: _togglePending
-                        ? const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : widget.done
-                        ? const Icon(Icons.check, color: Colors.white, size: 13)
-                        : null,
+                  child: CheckGlyph(
+                    checked: widget.done,
+                    pending: _togglePending,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -235,30 +299,36 @@ class _TaskCheckTileState extends State<TaskCheckTile> {
                     widget.text,
                     style: TextStyle(
                       fontSize: widget.fontSize,
-                      color: widget.done || widget.deferred ? AppColors.sub : AppColors.text,
-                      decoration: widget.done ? TextDecoration.lineThrough : null,
+                      color: widget.done || widget.deferred
+                          ? AppColors.sub
+                          : AppColors.text,
+                      decoration:
+                          widget.done ? TextDecoration.lineThrough : null,
                       height: 1.45,
                     ),
                   ),
                 ),
                 if (widget.isMakeup)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.pill,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text('补卡', style: AppTextStyles.caption),
                   ),
-                if (widget.deferred)
-                  Text('明日', style: AppTextStyles.caption),
+                if (widget.deferred) Text('明日', style: AppTextStyles.caption),
                 // Defer button (only for undone, non-deferred tasks)
-                if (!widget.done && !widget.deferred && widget.onDefer != null) ...[
+                if (!widget.done &&
+                    !widget.deferred &&
+                    widget.onDefer != null) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: _runDefer,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: AppColors.bg,
                         borderRadius: BorderRadius.circular(10),
@@ -275,7 +345,8 @@ class _TaskCheckTileState extends State<TaskCheckTile> {
                           : Text(
                               '顺延',
                               style: TextStyle(
-                                fontSize: 12, color: AppColors.sub,
+                                fontSize: 12,
+                                color: AppColors.sub,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -287,9 +358,11 @@ class _TaskCheckTileState extends State<TaskCheckTile> {
           ),
           if (widget.showDivider)
             Divider(
-              height: 1, thickness: 1,
+              height: 1,
+              thickness: 1,
               color: AppColors.border,
-              indent: 54, endIndent: 18,
+              indent: 54,
+              endIndent: 18,
             ),
         ],
       );
@@ -333,9 +406,12 @@ class _AccentButtonState extends State<AccentButton> {
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: widget.loading || _pending || widget.onTap == null ? null : _runTap,
+          onPressed: widget.loading || _pending || widget.onTap == null
+              ? null
+              : _runTap,
           style: ElevatedButton.styleFrom(
-            backgroundColor: widget.onTap != null ? AppColors.accent : AppColors.border,
+            backgroundColor:
+                widget.onTap != null ? AppColors.accent : AppColors.border,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -345,15 +421,20 @@ class _AccentButtonState extends State<AccentButton> {
           ),
           child: widget.loading || _pending
               ? const SizedBox(
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white,
+                    strokeWidth: 2,
+                    color: Colors.white,
                   ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (widget.leading != null) ...[widget.leading!, const SizedBox(width: 8)],
+                    if (widget.leading != null) ...[
+                      widget.leading!,
+                      const SizedBox(width: 8)
+                    ],
                     Text(widget.label,
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700)),
@@ -395,12 +476,15 @@ void showToast(BuildContext context, String message) {
           decoration: BoxDecoration(
             color: AppColors.accent,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 12)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 12)
+            ],
           ),
           constraints: const BoxConstraints(maxWidth: 240),
           child: Text(
             message,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
             textAlign: TextAlign.center,
           ),
         ),
@@ -420,7 +504,11 @@ class StatusBadge extends StatelessWidget {
   const StatusBadge(this.status, {super.key});
 
   static const _labels = {
-    'active': '进行中', 'paused': '已暂停', 'done': '已完成', 'completed': '已完成', 'terminated': '已终止',
+    'active': '进行中',
+    'paused': '已暂停',
+    'done': '已完成',
+    'completed': '已完成',
+    'terminated': '已终止',
   };
 
   @override
@@ -435,7 +523,8 @@ class StatusBadge extends StatelessWidget {
       child: Text(
         _labels[status] ?? status,
         style: TextStyle(
-          fontSize: 11, fontWeight: FontWeight.w600,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
           color: isActive ? AppColors.accent : AppColors.sub,
         ),
       ),

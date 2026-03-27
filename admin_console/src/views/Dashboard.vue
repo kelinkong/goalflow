@@ -4,39 +4,38 @@
       <div class="navbar-brand">🎯 GoalFlow Admin</div>
       <div class="navbar-menu">
         <router-link to="/dashboard" class="active">仪表盘</router-link>
-        <router-link to="/users">用户</router-link>
-        <router-link to="/templates">模板审核</router-link>
-        <router-link to="/logs">日志</router-link>
-        <a @click="handleLogout" style="cursor: pointer;">退出</a>
+        <router-link to="/users">用户管理</router-link>
+        <router-link to="/logs">系统日志</router-link>
+        <a @click="handleLogout" style="cursor: pointer;">退出登录</a>
       </div>
     </nav>
 
     <div class="container">
-      <h1>📊 数据概览</h1>
+      <h1>📊 系统数据概览</h1>
       
       <div class="stats-grid">
-        <div class="stat-card" @click="router.push('/templates')" style="cursor: pointer;">
-          <div class="stat-icon">📋</div>
-          <div class="stat-value">{{ stats.pendingTemplates || 0 }}</div>
-          <div class="stat-label">待审核模板</div>
-        </div>
-        
         <div class="stat-card">
           <div class="stat-icon">👥</div>
           <div class="stat-value">{{ stats.totalUsers || 0 }}</div>
-          <div class="stat-label">总用户数</div>
+          <div class="stat-label">总注册用户</div>
         </div>
         
         <div class="stat-card">
           <div class="stat-icon">🎯</div>
           <div class="stat-value">{{ stats.totalGoals || 0 }}</div>
-          <div class="stat-label">总目标数</div>
+          <div class="stat-label">活跃目标数</div>
         </div>
         
         <div class="stat-card">
-          <div class="stat-icon">✅</div>
-          <div class="stat-value">{{ stats.completedTasks || 0 }}</div>
-          <div class="stat-label">已完成任务</div>
+          <div class="stat-icon">🔄</div>
+          <div class="stat-value">{{ stats.totalHabits || 0 }}</div>
+          <div class="stat-label">正在坚持的习惯</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">📝</div>
+          <div class="stat-value">{{ stats.totalReviews || 0 }}</div>
+          <div class="stat-label">累计复盘次数</div>
         </div>
       </div>
 

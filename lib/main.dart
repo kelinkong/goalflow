@@ -5,9 +5,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'services/app_state.dart';
+import 'services/reminder_service.dart';
 import 'theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/goals_screen.dart';
+import 'screens/habits_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/login_screen.dart';
@@ -19,8 +21,10 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Warning: .env file not found, using default configurations.');
   }
+  await ReminderService.instance.initialize();
   await initializeDateFormatting('zh', null);
   final appState = AppState();
+  await appState.initializeLocalState();
   await appState.restoreSession();
   runApp(
     ChangeNotifierProvider.value(
@@ -66,6 +70,7 @@ class _MainShellState extends State<MainShell> {
   static const _screens = [
     HomeScreen(),
     GoalsScreen(),
+    HabitsScreen(),
     ProgressScreen(),
     SettingsScreen(),
   ];
@@ -107,7 +112,8 @@ class _BottomNav extends StatelessWidget {
   static const _items = [
     (icon: Icons.home_rounded, label: '首页'),
     (icon: Icons.track_changes_rounded, label: '目标'),
-    (icon: Icons.bar_chart_rounded, label: '进度'),
+    (icon: Icons.self_improvement_rounded, label: '习惯'),
+    (icon: Icons.calendar_month_rounded, label: '轨迹'),
     (icon: Icons.settings_rounded, label: '设置'),
   ];
 

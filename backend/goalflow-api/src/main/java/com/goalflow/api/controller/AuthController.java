@@ -2,6 +2,7 @@ package com.goalflow.api.controller;
 
 import com.goalflow.api.dto.LoginRequest;
 import com.goalflow.api.dto.RegisterRequest;
+import com.goalflow.api.dto.UpdateProfileRequest;
 import com.goalflow.api.entity.User;
 import com.goalflow.api.exception.BusinessException;
 import com.goalflow.api.mapper.UserMapper;
@@ -65,11 +66,29 @@ public class AuthController {
             return ResponseEntity.status(401).body("Unauthorized");
         }
         User user = userService.requireByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(toProfileResponse(user));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMe(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UpdateProfileRequest request
+    ) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        User user = userService.requireByEmail(userDetails.getUsername());
+        User updatedUser = userService.updateProfile(user, request.getNickname(), request.getAvatar());
+        return ResponseEntity.ok(toProfileResponse(updatedUser));
+    }
+
+    private Map<String, Object> toProfileResponse(User user) {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("id", user.getId());
         data.put("email", user.getEmail());
         data.put("nickname", user.getNickname());
         data.put("avatar", user.getAvatar());
-        return ResponseEntity.ok(data);
+        data.put("createdAt", user.getCreatedAt()); // 返回注册时间
+        return data;
     }
 }

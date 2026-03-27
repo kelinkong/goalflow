@@ -3,16 +3,12 @@ import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Users from '../views/Users.vue'
 import Logs from '../views/Logs.vue'
-import Templates from '../views/Templates.vue'
-import TemplateCreate from '../views/TemplateCreate.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', name: 'Login', component: Login },
-  { path: '/users', name: 'Users', component: Users },
   { path: '/dashboard', name: 'Dashboard', component: Dashboard },
-  { path: '/templates', name: 'Templates', component: Templates },
-  { path: '/templates/create', name: 'TemplateCreate', component: TemplateCreate },
+  { path: '/users', name: 'Users', component: Users },
   { path: '/logs', name: 'Logs', component: Logs }
 ]
 

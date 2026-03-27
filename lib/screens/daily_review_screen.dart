@@ -271,60 +271,48 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
 
   Widget _buildDimensionCard(DailyReviewDimension dimension) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12)
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          )
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(dimension.label,
-              style: AppTextStyles.title.copyWith(fontSize: 16)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: DailyReviewStatus.values.map((status) {
-              final selected = _statuses[dimension] == status;
-              return GestureDetector(
-                onTap: () => setState(() => _statuses[dimension] = status),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.accent : AppColors.pill,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    status.label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: selected ? Colors.white : AppColors.text,
-                    ),
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                dimension.label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.text,
+                  letterSpacing: 0.5,
                 ),
-              );
-            }).toList(growable: false),
+              ),
+              _buildStatusSelector(dimension),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           TextField(
             controller: _commentCtrls[dimension],
-            maxLines: 3,
+            minLines: 1,
+            maxLines: 4,
+            style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.6),
             decoration: InputDecoration(
-              hintText: '写下今天在${dimension.label}上的具体情况',
-              filled: true,
-              fillColor: AppColors.bg,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(14),
+              hintText: '描述今天在${dimension.label}上的真实感受...',
+              hintStyle: AppTextStyles.caption.copyWith(fontSize: 13),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ],
@@ -332,34 +320,92 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
     );
   }
 
+  Widget _buildStatusSelector(DailyReviewDimension dimension) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: DailyReviewStatus.values.map((status) {
+          final isSelected = _statuses[dimension] == status;
+          return GestureDetector(
+            onTap: () => setState(() => _statuses[dimension] = status),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(9),
+                boxShadow: isSelected 
+                  ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]
+                  : null,
+              ),
+              child: Opacity(
+                opacity: isSelected ? 1.0 : 0.4,
+                child: Text(
+                  _getStatusEmoji(status),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _getStatusEmoji(DailyReviewStatus status) {
+    switch (status) {
+      case DailyReviewStatus.good: return '🌟';
+      case DailyReviewStatus.normal: return '🙂';
+      case DailyReviewStatus.bad: return '😐';
+      default: return '？';
+    }
+  }
+
   Widget _buildPriorityCard() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12)
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          )
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('明日最重要的事', style: AppTextStyles.title.copyWith(fontSize: 16)),
-          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.rocket_launch_rounded, size: 16, color: Colors.orangeAccent),
+              const SizedBox(width: 8),
+              Text(
+                '明日最重要的事', 
+                style: AppTextStyles.title.copyWith(fontSize: 14, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           TextField(
             controller: _priorityCtrl,
-            maxLines: 3,
+            minLines: 1,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.6),
             decoration: InputDecoration(
-              hintText: '只写一件最重要的事，避免分散',
-              filled: true,
-              fillColor: AppColors.bg,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(14),
+              hintText: '只写一件最重要的事，开启新的一天...',
+              hintStyle: AppTextStyles.caption.copyWith(fontSize: 13),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ],

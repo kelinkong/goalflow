@@ -3,24 +3,34 @@ package com.goalflow.api.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@TableName("rankings")
+@TableName("habit_checkins")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Ranking {
+public class HabitCheckin {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long templateId;
+    private Long habitId;
 
     private Long userId;
 
-    private Integer progressPercent;
-    private Integer previousRank;
+    private LocalDate date;
+
+    private Boolean isDone;
+
+    private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 }

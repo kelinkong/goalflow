@@ -164,6 +164,22 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    final response = await _send(
+      () => http.put(
+        Uri.parse('$baseUrl/api/auth/me'),
+        headers: _headers,
+        body: jsonEncode(data),
+      ),
+      action: '更新个人资料',
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      _throwFriendlyError(response, action: '更新个人资料');
+    }
+  }
+
   // ── Goals APIs ─────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getGoals() async {
@@ -309,115 +325,6 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getPublicTemplates() async {
-    final response = await _send(
-      () => http.get(
-        Uri.parse('$baseUrl/api/templates'),
-        headers: _headers,
-      ),
-      action: '获取模板列表',
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    }
-    _throwFriendlyError(response, action: '获取模板列表');
-  }
-
-  Future<List<Map<String, dynamic>>> getMyTemplates() async {
-    final response = await _send(
-      () => http.get(
-        Uri.parse('$baseUrl/api/templates/my'),
-        headers: _headers,
-      ),
-      action: '获取我的模板',
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    }
-    _throwFriendlyError(response, action: '获取我的模板');
-  }
-
-  Future<Map<String, dynamic>> createTemplate(
-      Map<String, dynamic> templateData) async {
-    final response = await _send(
-      () => http.post(
-        Uri.parse('$baseUrl/api/templates'),
-        headers: _headers,
-        body: jsonEncode(templateData),
-      ),
-      action: '保存模板',
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    _throwFriendlyError(response, action: '保存模板');
-  }
-
-  Future<Map<String, dynamic>> publishTemplate(String templateId) async {
-    final response = await _send(
-      () => http.post(
-        Uri.parse('$baseUrl/api/templates/$templateId/publish'),
-        headers: _headers,
-      ),
-      action: '提交审核',
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    _throwFriendlyError(response, action: '提交审核');
-  }
-
-  Future<Map<String, dynamic>> useTemplate(
-    String templateId, {
-    required bool joinRanking,
-  }) async {
-    final response = await _send(
-      () => http.post(
-        Uri.parse('$baseUrl/api/templates/$templateId/use'),
-        headers: _headers,
-        body: jsonEncode({'joinRanking': joinRanking}),
-      ),
-      action: '使用模板',
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    _throwFriendlyError(response, action: '使用模板');
-  }
-
-  Future<List<Map<String, dynamic>>> getTemplateRanking(
-      String templateId) async {
-    final response = await _send(
-      () => http.get(
-        Uri.parse('$baseUrl/api/templates/$templateId/ranking'),
-        headers: _headers,
-      ),
-      action: '获取排行榜',
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    }
-    _throwFriendlyError(response, action: '获取排行榜');
-  }
-
-  Future<List<Map<String, dynamic>>> getMedals() async {
-    final response = await _send(
-      () => http.get(
-        Uri.parse('$baseUrl/api/medals'),
-        headers: _headers,
-      ),
-      action: '获取勋章',
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    }
-    _throwFriendlyError(response, action: '获取勋章');
-  }
-
   Future<Map<String, dynamic>?> getDailyReview(String date) async {
     final response = await _send(
       () => http.get(
@@ -467,6 +374,103 @@ class ApiService {
       return dates.map((item) => item.toString()).toList(growable: false);
     }
     _throwFriendlyError(response, action: '获取复盘月历');
+  }
+
+  Future<List<Map<String, dynamic>>> getHabits() async {
+    final response = await _send(
+      () => http.get(
+        Uri.parse('$baseUrl/api/habits'),
+        headers: _headers,
+      ),
+      action: '获取习惯列表',
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    }
+    _throwFriendlyError(response, action: '获取习惯列表');
+  }
+
+  Future<Map<String, dynamic>> createHabit(Map<String, dynamic> payload) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/api/habits'),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ),
+      action: '创建习惯',
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    _throwFriendlyError(response, action: '创建习惯');
+  }
+
+  Future<Map<String, dynamic>> updateHabit(
+    String id,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _send(
+      () => http.patch(
+        Uri.parse('$baseUrl/api/habits/$id'),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ),
+      action: '更新习惯',
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    _throwFriendlyError(response, action: '更新习惯');
+  }
+
+  Future<void> deleteHabit(String id) async {
+    final response = await _send(
+      () => http.delete(
+        Uri.parse('$baseUrl/api/habits/$id'),
+        headers: _headers,
+      ),
+      action: '删除习惯',
+    );
+    if (response.statusCode != 204) {
+      _throwFriendlyError(response, action: '删除习惯');
+    }
+  }
+
+  Future<void> setHabitCheckin(
+    String habitId,
+    String date,
+    bool isDone,
+  ) async {
+    final response = await _send(
+      () => http.put(
+        Uri.parse('$baseUrl/api/habits/$habitId/checkins/$date'),
+        headers: _headers,
+        body: jsonEncode({'isDone': isDone}),
+      ),
+      action: isDone ? '习惯打卡' : '取消习惯打卡',
+    );
+    if (response.statusCode != 200) {
+      _throwFriendlyError(response, action: isDone ? '习惯打卡' : '取消习惯打卡');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getHabitCheckins(String month) async {
+    final response = await _send(
+      () => http.get(
+        Uri.parse('$baseUrl/api/habits/checkins?month=$month'),
+        headers: _headers,
+      ),
+      action: '获取习惯月历',
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final items = (data['checkins'] as List? ?? const []);
+      return items
+          .map((item) => (item as Map).cast<String, dynamic>())
+          .toList();
+    }
+    _throwFriendlyError(response, action: '获取习惯月历');
   }
 
   Future<Map<String, dynamic>> exportAccountData() async {
