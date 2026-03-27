@@ -384,7 +384,7 @@ class _MonthCalendarState extends State<_MonthCalendar> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              '● 左点：目标  ● 中点：习惯  ● 右点：复盘',
+              '● 左点：目标完成  ● 中点：习惯完成  ● 右点：复盘完成',
               style: AppTextStyles.caption.copyWith(fontSize: 11),
               textAlign: TextAlign.center,
             ),
@@ -924,6 +924,9 @@ class _TrendChartCardState extends State<_TrendChartCard> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      
+      // Fetch habits list to ensure we have habit data
+      unawaited(widget.state.fetchHabits(silent: true));
       
       // Fetch goal timelines for trend data
       for (final goal in widget.goals) {
