@@ -9,11 +9,10 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/goal.dart';
 import '../models/goal_decomposition.dart';
-import '../models/goal_template.dart';
-import '../models/medal_item.dart';
-import '../models/ranking_entry.dart';
+import '../models/habit.dart';
 import '../models/daily_review.dart';
 import '../services/api_service.dart';
+import '../services/reminder_service.dart';
 import '../widgets/share_card.dart';
 
 class TaskViewItem {
@@ -84,11 +83,16 @@ class AppState extends ChangeNotifier {
   static const _tokenStorageKey = 'auth_token';
   static const _dailyAiDecomposeLimit = 10;
   static const _aiDecomposeCountKeyPrefix = 'ai_decompose_count';
+  static const _reminderEnabledStorageKey = 'daily_reminder_enabled';
+  static const _reminderHourStorageKey = 'daily_reminder_hour';
+  static const _reminderMinuteStorageKey = 'daily_reminder_minute';
   final ApiService _api = ApiService();
   String? _globalMessage;
 
   List<Goal> _goals = [];
   List<Goal> get goals => _goals;
+  List<Habit> _habits = [];
+  List<Habit> get habits => _habits;
   String? get globalMessage => _globalMessage;
 
   bool _isLoggedIn = false;
@@ -98,23 +102,35 @@ class AppState extends ChangeNotifier {
   String? _userEmail;
   String? _userNickname;
   String? _userAvatar;
+  DateTime? _userCreatedAt;
   String? get userId => _userId;
   String? get userEmail => _userEmail;
   String? get userNickname => _userNickname;
   String? get userAvatar => _userAvatar;
+  DateTime? get userCreatedAt => _userCreatedAt;
 
   final Map<String, List<TimelineDayView>> _timelineByGoal = {};
   final Map<String, Map<String, List<TaskViewItem>>> _taskViewsByGoalDate = {};
   final Set<String> _pendingActions = <String>{};
-  List<GoalTemplate> _publicTemplates = [];
-  List<GoalTemplate> get publicTemplates => _publicTemplates;
-  List<GoalTemplate> _myTemplates = [];
-  List<GoalTemplate> get myTemplates => _myTemplates;
-  List<MedalItem> _medals = [];
-  List<MedalItem> get medals => _medals;
-  final Map<String, List<RankingEntry>> _rankingByTemplate = {};
   final Map<String, DailyReview> _dailyReviewsByDate = {};
   final Map<String, Set<String>> _reviewedDatesByMonth = {};
+  final Map<String, Set<String>> _habitDoneDatesByMonth = {};
+  bool _reminderEnabled = false;
+  int _reminderHour = 19;
+  int _reminderMinute = 0;
+  bool get reminderEnabled => _reminderEnabled;
+  TimeOfDay get reminderTime =>
+      TimeOfDay(hour: _reminderHour, minute: _reminderMinute);
+  String get reminderTimeLabel =>
+      '${_reminderHour.toString().padLeft(2, '0')}:${_reminderMinute.toString().padLeft(2, '0')}';
+
+  int get reviewedDatesCount {
+    final allDates = <String>{};
+    for (final monthSet in _reviewedDatesByMonth.values) {
+      allDates.addAll(monthSet);
+    }
+    return allDates.length;
+  }
 
   AppState() {
     _api.onUnauthorized = _handleUnauthorized;
@@ -138,6 +154,21 @@ class AppState extends ChangeNotifier {
     _globalMessage = null;
   }
 
+  Future<void> initializeLocalState() async {
+    final prefs = await SharedPreferences.getInstance();
+    _reminderEnabled = prefs.getBool(_reminderEnabledStorageKey) ?? false;
+    _reminderHour = prefs.getInt(_reminderHourStorageKey) ?? 19;
+    _reminderMinute = prefs.getInt(_reminderMinuteStorageKey) ?? 0;
+    if (_reminderEnabled) {
+      await ReminderService.instance.scheduleDailyReminder(
+        hour: _reminderHour,
+        minute: _reminderMinute,
+      );
+    } else {
+      await ReminderService.instance.cancelDailyReminder();
+    }
+  }
+
   Future<void> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
     final savedToken = prefs.getString(_tokenStorageKey);
@@ -150,9 +181,11 @@ class AppState extends ChangeNotifier {
       _userEmail = me['email']?.toString();
       _userNickname = me['nickname']?.toString();
       _userAvatar = me['avatar']?.toString();
+      if (me['createdAt'] != null) {
+        _userCreatedAt = DateTime.parse(me['createdAt'].toString());
+      }
       await fetchGoals();
-      await fetchTemplates(silent: true);
-      await fetchMedals(silent: true);
+      await fetchHabits(silent: true);
       await fetchDailyReviewCalendar(DateTime.now(), silent: true);
       notifyListeners();
     } catch (e) {
@@ -166,12 +199,10 @@ class AppState extends ChangeNotifier {
       _userAvatar = null;
       _timelineByGoal.clear();
       _taskViewsByGoalDate.clear();
-      _publicTemplates = [];
-      _myTemplates = [];
-      _medals = [];
-      _rankingByTemplate.clear();
+      _habits = [];
       _dailyReviewsByDate.clear();
       _reviewedDatesByMonth.clear();
+      _habitDoneDatesByMonth.clear();
     }
   }
 
@@ -182,8 +213,7 @@ class AppState extends ChangeNotifier {
     _isLoggedIn = true;
     await fetchMe();
     await fetchGoals();
-    await fetchTemplates(silent: true);
-    await fetchMedals(silent: true);
+    await fetchHabits(silent: true);
     await fetchDailyReviewCalendar(DateTime.now(), silent: true);
     notifyListeners();
   }
@@ -199,12 +229,10 @@ class AppState extends ChangeNotifier {
     _userAvatar = null;
     _timelineByGoal.clear();
     _taskViewsByGoalDate.clear();
-    _publicTemplates = [];
-    _myTemplates = [];
-    _medals = [];
-    _rankingByTemplate.clear();
+    _habits = [];
     _dailyReviewsByDate.clear();
     _reviewedDatesByMonth.clear();
+    _habitDoneDatesByMonth.clear();
     notifyListeners();
   }
 
@@ -218,12 +246,10 @@ class AppState extends ChangeNotifier {
     _userAvatar = null;
     _timelineByGoal.clear();
     _taskViewsByGoalDate.clear();
-    _publicTemplates = [];
-    _myTemplates = [];
-    _medals = [];
-    _rankingByTemplate.clear();
+    _habits = [];
     _dailyReviewsByDate.clear();
     _reviewedDatesByMonth.clear();
+    _habitDoneDatesByMonth.clear();
     _globalMessage = '登录状态已过期，请重新登录';
     _pendingActions.clear();
     unawaited(_clearStoredToken());
@@ -242,8 +268,49 @@ class AppState extends ChangeNotifier {
       _userEmail = me['email']?.toString();
       _userNickname = me['nickname']?.toString();
       _userAvatar = me['avatar']?.toString();
+      if (me['createdAt'] != null) {
+        _userCreatedAt = DateTime.parse(me['createdAt'].toString());
+      }
     } catch (e) {
       debugPrint('Fetch profile failed: $e');
+    }
+  }
+
+  Future<void> updateAvatar(String base64Image) async {
+    await updateProfile(avatar: base64Image);
+  }
+
+  Future<void> updateProfile({
+    String? nickname,
+    String? avatar,
+  }) async {
+    if (!_isLoggedIn) return;
+    const actionKey = 'user:update_profile';
+    if (!_startAction(actionKey)) return;
+    try {
+      final payload = <String, dynamic>{};
+      if (nickname != null) payload['nickname'] = nickname;
+      
+      if (avatar != null) {
+        // 剥离 Data URL 前缀 (如 data:image/jpeg;base64,)
+        String pureBase64 = avatar;
+        if (pureBase64.contains(',')) {
+          pureBase64 = pureBase64.substring(pureBase64.indexOf(',') + 1);
+        }
+        payload['avatar'] = pureBase64;
+      }
+      
+      if (payload.isEmpty) return;
+
+      final result = await _api.updateProfile(payload);
+      _userNickname = result['nickname']?.toString();
+      _userAvatar = result['avatar']?.toString();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Update profile failed: $e');
+      rethrow;
+    } finally {
+      _finishAction(actionKey);
     }
   }
 
@@ -253,10 +320,21 @@ class AppState extends ChangeNotifier {
       final remoteGoalsData = await _api.getGoals();
       _goals = remoteGoalsData.map((data) => Goal.fromJson(data)).toList();
       await _hydrateTimelinesForGoals();
-      await _refreshJoinedRankings(silent: true);
       notifyListeners();
     } catch (e) {
       debugPrint('Fetch goals failed: $e');
+    }
+  }
+
+  Future<void> fetchHabits({bool silent = false}) async {
+    if (!_isLoggedIn) return;
+    try {
+      final raw = await _api.getHabits();
+      _habits = raw.map(Habit.fromJson).toList();
+      await fetchHabitCalendar(DateTime.now(), silent: true);
+      if (!silent) notifyListeners();
+    } catch (e) {
+      debugPrint('Fetch habits failed: $e');
     }
   }
 
@@ -308,40 +386,6 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       debugPrint('Fetch timeline failed($goalId): $e');
     }
-  }
-
-  Future<void> fetchTemplates({bool silent = false}) async {
-    if (!_isLoggedIn) return;
-    try {
-      final publicData = await _api.getPublicTemplates();
-      final myData = await _api.getMyTemplates();
-      _publicTemplates = publicData.map(GoalTemplate.fromJson).toList();
-      _myTemplates = myData.map(GoalTemplate.fromJson).toList();
-      if (!silent) notifyListeners();
-    } catch (e) {
-      debugPrint('Fetch templates failed: $e');
-    }
-  }
-
-  Future<void> fetchMedals({bool silent = false}) async {
-    if (!_isLoggedIn) return;
-    try {
-      final medalData = await _api.getMedals();
-      _medals = medalData.map(MedalItem.fromJson).toList()
-        ..sort((a, b) => b.awardedAt.compareTo(a.awardedAt));
-      if (!silent) notifyListeners();
-    } catch (e) {
-      debugPrint('Fetch medals failed: $e');
-    }
-  }
-
-  Future<List<RankingEntry>> fetchRanking(String templateId) async {
-    if (!_isLoggedIn) return const [];
-    final raw = await _api.getTemplateRanking(templateId);
-    final items = raw.map(RankingEntry.fromJson).toList();
-    _rankingByTemplate[templateId] = items;
-    notifyListeners();
-    return items;
   }
 
   DailyReview? getCachedDailyReview(DateTime date) {
@@ -398,6 +442,163 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  bool isHabitMonthLoaded(DateTime month) {
+    return _habitDoneDatesByMonth.containsKey(_monthKey(month));
+  }
+
+  bool hasHabitDoneOn(DateTime date) {
+    final key = _dateKey(date);
+    return _habitDoneDatesByMonth[_monthKey(date)]
+            ?.any((item) => item.endsWith('|$key')) ??
+        false;
+  }
+
+  int doneHabitCountOn(DateTime date) {
+    final key = _dateKey(date);
+    return _habits.where((habit) => isHabitDoneOnDate(habit.id, key)).length;
+  }
+
+  int totalHabitCountOn(DateTime date) {
+    return _habits.where((habit) {
+      if (!habit.isActive) return false;
+      // Only count habits that were created on or before this date
+      if (habit.createdAt != null && habit.createdAt!.isAfter(date)) {
+        return false;
+      }
+      return true;
+    }).length;
+  }
+
+  Future<void> fetchHabitCalendar(DateTime month, {bool silent = false}) async {
+    if (!_isLoggedIn) return;
+    final monthText = _monthKey(month);
+    try {
+      final checkins = await _api.getHabitCheckins(monthText);
+      final doneDates = <String>{};
+      for (final item in checkins) {
+        final date = item['date']?.toString();
+        final habitId = item['habitId']?.toString();
+        if (habitId != null &&
+            habitId.isNotEmpty &&
+            date != null &&
+            date.isNotEmpty) {
+          doneDates.add('$habitId|$date');
+        }
+      }
+      _habitDoneDatesByMonth[monthText] = doneDates;
+      if (!silent) notifyListeners();
+    } catch (e) {
+      debugPrint('Fetch habit calendar failed($monthText): $e');
+    }
+  }
+
+  Future<void> addHabit({
+    required String name,
+    String? category,
+  }) async {
+    if (!_isLoggedIn) return;
+    const actionKey = 'habit:create';
+    if (!_startAction(actionKey)) return;
+    try {
+      final created = await _api.createHabit({
+        'name': name,
+        if (category != null && category.trim().isNotEmpty)
+          'category': category.trim(),
+      });
+      final habit = Habit.fromJson(created);
+      _habits = [habit, ..._habits.where((item) => item.id != habit.id)];
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Create habit failed: $e');
+      rethrow;
+    } finally {
+      _finishAction(actionKey);
+    }
+  }
+
+  Future<void> updateHabit(
+    Habit habit, {
+    required String name,
+    String? category,
+  }) async {
+    if (!_isLoggedIn) return;
+    final actionKey = 'habit:update:${habit.id}';
+    if (!_startAction(actionKey)) return;
+    try {
+      final updated = await _api.updateHabit(habit.id, {
+        'name': name,
+        'category': category?.trim().isEmpty == true ? null : category?.trim(),
+      });
+      final parsed = Habit.fromJson(updated);
+      final index = _habits.indexWhere((item) => item.id == habit.id);
+      if (index != -1) {
+        _habits[index] = parsed.copyWith(todayDone: _habits[index].todayDone);
+      }
+      notifyListeners();
+      unawaited(fetchHabits(silent: true));
+    } catch (e) {
+      debugPrint('Update habit failed: $e');
+      rethrow;
+    } finally {
+      _finishAction(actionKey);
+    }
+  }
+
+  Future<void> deleteHabit(String habitId) async {
+    if (!_isLoggedIn) return;
+    final actionKey = 'habit:delete:$habitId';
+    if (!_startAction(actionKey)) return;
+    final previous = List<Habit>.from(_habits);
+    _habits.removeWhere((habit) => habit.id == habitId);
+    notifyListeners();
+    try {
+      await _api.deleteHabit(habitId);
+      unawaited(fetchHabitCalendar(DateTime.now(), silent: true));
+    } catch (e) {
+      _habits = previous;
+      notifyListeners();
+      debugPrint('Delete habit failed: $e');
+      rethrow;
+    } finally {
+      _finishAction(actionKey);
+    }
+  }
+
+  Future<void> toggleHabit(Habit habit, DateTime date) async {
+    if (!_isLoggedIn) return;
+    final dateKey = _dateKey(date);
+    final actionKey = 'habit:toggle:${habit.id}:$dateKey';
+    if (!_startAction(actionKey)) return;
+    final monthKey = _monthKey(date);
+    final monthSet =
+        _habitDoneDatesByMonth.putIfAbsent(monthKey, () => <String>{});
+    final wasDone = monthSet.contains('${habit.id}|$dateKey');
+    final nextDone = !wasDone;
+    final previousMonthSet = Set<String>.from(monthSet);
+    final previousHabits = List<Habit>.from(_habits);
+
+    if (nextDone) {
+      monthSet.add('${habit.id}|$dateKey');
+    } else {
+      monthSet.remove('${habit.id}|$dateKey');
+    }
+    _applyHabitToggleLocal(habit.id, date, nextDone);
+    notifyListeners();
+    try {
+      await _api.setHabitCheckin(habit.id, dateKey, nextDone);
+      unawaited(fetchHabits(silent: true));
+      unawaited(fetchHabitCalendar(date, silent: true));
+    } catch (e) {
+      _habitDoneDatesByMonth[monthKey] = previousMonthSet;
+      _habits = previousHabits;
+      notifyListeners();
+      debugPrint('Toggle habit failed: $e');
+      rethrow;
+    } finally {
+      _finishAction(actionKey);
+    }
+  }
+
   Future<DailyReview> saveDailyReview(DailyReview review) async {
     if (!_isLoggedIn) {
       throw Exception('Login required');
@@ -435,24 +636,6 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> _refreshJoinedRankings({bool silent = false}) async {
-    if (!_isLoggedIn) return;
-    final templateIds = _goals
-        .where((goal) => goal.templateId != null && goal.joinRanking)
-        .map((goal) => goal.templateId!)
-        .toSet();
-    for (final templateId in templateIds) {
-      try {
-        final raw = await _api.getTemplateRanking(templateId);
-        _rankingByTemplate[templateId] =
-            raw.map(RankingEntry.fromJson).toList();
-      } catch (e) {
-        debugPrint('Fetch ranking failed($templateId): $e');
-      }
-    }
-    if (!silent) notifyListeners();
-  }
-
   Future<void> addGoal(Goal goal) async {
     if (!_isLoggedIn) return;
     const actionKey = 'goal:create';
@@ -462,7 +645,7 @@ class AppState extends ChangeNotifier {
       final createdGoal = Goal.fromJson(created);
       _goals = [createdGoal, ..._goals.where((g) => g.id != createdGoal.id)];
       notifyListeners();
-      unawaited(fetchGoalTimeline(createdGoal.id, silent: true));
+      await fetchGoalTimeline(createdGoal.id, silent: false);
     } catch (e) {
       debugPrint('Create goal failed: $e');
       rethrow;
@@ -485,7 +668,7 @@ class AppState extends ChangeNotifier {
         _goals[latestIndex] = updatedGoal;
       }
       notifyListeners();
-      unawaited(fetchGoalTimeline(goal.id, silent: true));
+      await fetchGoalTimeline(goal.id, silent: false);
     } catch (e) {
       debugPrint('Save goal edits failed: $e');
       rethrow;
@@ -565,102 +748,6 @@ class AppState extends ChangeNotifier {
     return result;
   }
 
-  Future<void> createTemplateFromGoal(
-    Goal goal, {
-    required bool isPublic,
-    required String tags,
-  }) async {
-    if (!_isLoggedIn) return;
-    final actionKey = 'template:create:${goal.id}';
-    if (!_startAction(actionKey)) return;
-    try {
-      final createdTemplate = GoalTemplate.fromJson(await _api.createTemplate({
-        'name': goal.name,
-        'description': goal.desc,
-        'totalDays': goal.totalDays,
-        'visibility': isPublic ? 'PUBLIC' : 'PRIVATE',
-        'tags': tags,
-        'taskPlan': goal.taskPlan,
-      }));
-      _myTemplates = [
-        createdTemplate,
-        ..._myTemplates.where((template) => template.id != createdTemplate.id)
-      ];
-      notifyListeners();
-      unawaited(fetchTemplates(silent: true));
-    } catch (e) {
-      rethrow;
-    } finally {
-      _finishAction(actionKey);
-    }
-  }
-
-  Future<void> publishTemplate(String templateId) async {
-    if (!_isLoggedIn) return;
-    final actionKey = 'template:publish:$templateId';
-    if (!_startAction(actionKey)) return;
-    final index =
-        _myTemplates.indexWhere((template) => template.id == templateId);
-    GoalTemplate? previousTemplate;
-    if (index != -1) {
-      previousTemplate = _myTemplates[index];
-      _myTemplates[index] = previousTemplate.copyWith(
-        status: 'PENDING',
-        visibility: 'PRIVATE',
-      );
-      notifyListeners();
-    }
-    try {
-      await _api.publishTemplate(templateId);
-      await fetchTemplates();
-    } catch (e) {
-      if (index != -1 && previousTemplate != null) {
-        _myTemplates[index] = previousTemplate;
-        notifyListeners();
-      }
-      rethrow;
-    } finally {
-      _finishAction(actionKey);
-    }
-  }
-
-  Future<void> useTemplate(String templateId,
-      {required bool joinRanking}) async {
-    if (!_isLoggedIn) return;
-    final actionKey = 'template:use:$templateId';
-    if (!_startAction(actionKey)) return;
-    try {
-      final createdGoalData = await _api.useTemplate(
-        templateId,
-        joinRanking: joinRanking,
-      );
-      final createdGoal = Goal.fromJson(createdGoalData);
-      _goals = [
-        createdGoal,
-        ..._goals.where((goal) => goal.id != createdGoal.id)
-      ];
-      notifyListeners();
-      unawaited(fetchGoalTimeline(createdGoal.id, silent: true));
-      if (joinRanking && createdGoal.templateId != null) {
-        unawaited(() async {
-          try {
-            final raw = await _api.getTemplateRanking(createdGoal.templateId!);
-            _rankingByTemplate[createdGoal.templateId!] =
-                raw.map(RankingEntry.fromJson).toList();
-            notifyListeners();
-          } catch (e) {
-            debugPrint('Fetch ranking after template use failed: $e');
-          }
-        }());
-      }
-      unawaited(fetchTemplates(silent: true));
-    } catch (e) {
-      rethrow;
-    } finally {
-      _finishAction(actionKey);
-    }
-  }
-
   Future<String> exportGoalData() async {
     if (!_isLoggedIn) {
       throw Exception('Login required');
@@ -674,47 +761,47 @@ class AppState extends ChangeNotifier {
     const actionKey = 'history:clear';
     if (!_startAction(actionKey)) return;
     final previousGoals = _goals.map((goal) => goal.copyWith()).toList();
+    final previousHabits = List<Habit>.from(_habits);
     final previousTimeline =
         Map<String, List<TimelineDayView>>.from(_timelineByGoal);
     final previousTaskViews =
         Map<String, Map<String, List<TaskViewItem>>>.from(_taskViewsByGoalDate);
-    final previousMedals = List<MedalItem>.from(_medals);
-    final previousRankings =
-        Map<String, List<RankingEntry>>.from(_rankingByTemplate);
     final previousDailyReviews =
         Map<String, DailyReview>.from(_dailyReviewsByDate);
     final previousReviewCalendar = _reviewedDatesByMonth.map(
       (key, value) => MapEntry(key, Set<String>.from(value)),
     );
+    final previousHabitCalendar = _habitDoneDatesByMonth.map(
+      (key, value) => MapEntry(key, Set<String>.from(value)),
+    );
     _goals = [];
+    _habits = [];
     _timelineByGoal.clear();
     _taskViewsByGoalDate.clear();
-    _medals = [];
-    _rankingByTemplate.clear();
     _dailyReviewsByDate.clear();
     _reviewedDatesByMonth.clear();
+    _habitDoneDatesByMonth.clear();
     notifyListeners();
     try {
       await _api.clearHistory();
-      await fetchTemplates(silent: true);
     } catch (e) {
       _goals = previousGoals;
+      _habits = previousHabits;
       _timelineByGoal
         ..clear()
         ..addAll(previousTimeline);
       _taskViewsByGoalDate
         ..clear()
         ..addAll(previousTaskViews);
-      _medals = previousMedals;
-      _rankingByTemplate
-        ..clear()
-        ..addAll(previousRankings);
       _dailyReviewsByDate
         ..clear()
         ..addAll(previousDailyReviews);
       _reviewedDatesByMonth
         ..clear()
         ..addAll(previousReviewCalendar);
+      _habitDoneDatesByMonth
+        ..clear()
+        ..addAll(previousHabitCalendar);
       notifyListeners();
       rethrow;
     } finally {
@@ -764,6 +851,28 @@ class AppState extends ChangeNotifier {
     return _timelineByGoal[goal.id] ?? const [];
   }
 
+  List<Habit> activeHabitsForDate(DateTime date) {
+    final key = _dateKey(date);
+    return _habits
+        .where((habit) => habit.isActive)
+        .map((habit) => habit.copyWith(
+              todayDone: isHabitDoneOnDate(habit.id, key),
+            ))
+        .toList(growable: false);
+  }
+
+  bool isHabitDoneOnDate(String habitId, String dateKey) {
+    final month = dateKey.substring(0, 7);
+    return _habitDoneDatesByMonth[month]?.contains('$habitId|$dateKey') ??
+        false;
+  }
+
+  int habitStreak(Habit habit) {
+    return _habits
+        .firstWhere((item) => item.id == habit.id, orElse: () => habit)
+        .streak;
+  }
+
   Future<TaskActionResult> toggleTaskByKey(String key) async {
     if (!_isLoggedIn) return const TaskActionResult();
     final actionKey = 'task:toggle:$key';
@@ -799,7 +908,6 @@ class AppState extends ChangeNotifier {
       if (goalWillComplete && goalIndex != -1) {
         _goals[goalIndex] = _goals[goalIndex].copyWith(status: 'completed');
         notifyListeners();
-        unawaited(fetchMedals(silent: true));
         return const TaskActionResult(goalCompleted: true);
       }
       return const TaskActionResult();
@@ -919,31 +1027,62 @@ class AppState extends ChangeNotifier {
     return ((done / total) * 100).round();
   }
 
-  bool hasJoinedRanking(String templateId) {
-    return _goals
-        .any((goal) => goal.templateId == templateId && goal.joinRanking);
-  }
-
-  bool hasUsedTemplate(String templateId) {
-    return _goals.any((goal) => goal.templateId == templateId);
-  }
-
-  RankingEntry? currentUserRankingEntry(String templateId) {
-    final currentUserId = _userId;
-    if (currentUserId == null) return null;
-    final entries = _rankingByTemplate[templateId];
-    if (entries == null) return null;
-    for (final entry in entries) {
-      if (entry.userId == currentUserId) {
-        return entry;
-      }
-    }
-    return null;
-  }
-
   Future<void> _persistToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenStorageKey, token);
+  }
+
+  void _applyHabitToggleLocal(String habitId, DateTime date, bool isDone) {
+    final dateKey = _dateKey(date);
+    final todayKey = _dateKey(DateTime.now());
+    final index = _habits.indexWhere((habit) => habit.id == habitId);
+    if (index == -1) return;
+    final current = _habits[index];
+    _habits[index] = current.copyWith(
+      todayDone: dateKey == todayKey ? isDone : current.todayDone,
+      streak: dateKey == todayKey
+          ? _estimateHabitStreak(habitId, todayKey, isDone)
+          : current.streak,
+    );
+  }
+
+  int _estimateHabitStreak(String habitId, String dateKey, bool isDone) {
+    final doneDates = <DateTime>{};
+    for (final entry in _habitDoneDatesByMonth.entries) {
+      for (final value in entry.value) {
+        final parts = value.split('|');
+        if (parts.length == 2 && parts[0] == habitId) {
+          doneDates.add(_parseDateKey(parts[1]));
+        }
+      }
+    }
+    final targetDate = _parseDateKey(dateKey);
+    if (isDone) {
+      doneDates.add(targetDate);
+    } else {
+      doneDates.remove(targetDate);
+    }
+    if (doneDates.isEmpty) {
+      return 0;
+    }
+    final sorted = doneDates.toList()..sort((a, b) => b.compareTo(a));
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    if (sorted.first != normalizedToday) {
+      return 0;
+    }
+    var streak = 1;
+    var cursor = sorted.first;
+    for (var i = 1; i < sorted.length; i++) {
+      final next = sorted[i];
+      if (next == cursor.subtract(const Duration(days: 1))) {
+        streak += 1;
+        cursor = next;
+        continue;
+      }
+      break;
+    }
+    return streak;
   }
 
   Future<void> _clearStoredToken() async {
@@ -967,6 +1106,41 @@ class AppState extends ChangeNotifier {
   Future<void> _incrementTodayDecomposeCount(int currentCount) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_todayDecomposeStorageKey(), currentCount + 1);
+  }
+
+  Future<bool> setReminderEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (enabled) {
+      final granted = await ReminderService.instance.requestPermission();
+      if (!granted) {
+        return false;
+      }
+      await ReminderService.instance.scheduleDailyReminder(
+        hour: _reminderHour,
+        minute: _reminderMinute,
+      );
+    } else {
+      await ReminderService.instance.cancelDailyReminder();
+    }
+    _reminderEnabled = enabled;
+    await prefs.setBool(_reminderEnabledStorageKey, enabled);
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> setReminderTime(TimeOfDay time) async {
+    final prefs = await SharedPreferences.getInstance();
+    _reminderHour = time.hour;
+    _reminderMinute = time.minute;
+    await prefs.setInt(_reminderHourStorageKey, _reminderHour);
+    await prefs.setInt(_reminderMinuteStorageKey, _reminderMinute);
+    if (_reminderEnabled) {
+      await ReminderService.instance.scheduleDailyReminder(
+        hour: _reminderHour,
+        minute: _reminderMinute,
+      );
+    }
+    notifyListeners();
   }
 
   Future<void> shareProgress(BuildContext context,
@@ -1004,9 +1178,11 @@ class AppState extends ChangeNotifier {
       await file.parent.create(recursive: true);
       await file.writeAsBytes(image);
 
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: '我在 GoalFlow 坚持打卡，这是我的今日战报！🎯',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(filePath)],
+          text: '我在 GoalFlow 坚持打卡，这是我的今日战报！🎯',
+        ),
       );
     } catch (e) {
       debugPrint('Share failed: $e');
