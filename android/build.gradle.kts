@@ -22,3 +22,10 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+// Force a minimum desugar_jdk_libs version to satisfy AAR metadata checks (some plugins require >=2.1.4)
+subprojects {
+    configurations.matching { it.isCanBeResolved }.all {
+        resolutionStrategy.force("com.android.tools:desugar_jdk_libs:2.1.4")
+    }
+}
