@@ -65,3 +65,4 @@ ssh <your-server> 'docker restart backend'
 - 后端容器是否成功重启
 - 关键接口是否正常
 - 数据库缺列问题是否已真正修复
+- 相关文档是否更新
