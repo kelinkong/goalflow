@@ -1,19 +1,13 @@
 import 'dart:convert';
 import 'dart:async';
-
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
 import '../models/goal.dart';
 import '../models/goal_decomposition.dart';
 import '../models/habit.dart';
 import '../models/daily_review.dart';
 import '../services/api_service.dart';
 import '../services/reminder_service.dart';
-import '../widgets/share_card.dart';
 
 class TaskViewItem {
   final String key;
@@ -177,13 +171,7 @@ class AppState extends ChangeNotifier {
     _isLoggedIn = true;
     try {
       final me = await _api.getMe();
-      _userId = me['id']?.toString();
-      _userEmail = me['email']?.toString();
-      _userNickname = me['nickname']?.toString();
-      _userAvatar = me['avatar']?.toString();
-      if (me['createdAt'] != null) {
-        _userCreatedAt = DateTime.parse(me['createdAt'].toString());
-      }
+      _applyProfileData(me);
       await fetchGoals();
       await fetchHabits(silent: true);
       await fetchDailyReviewCalendar(DateTime.now(), silent: true);
@@ -191,18 +179,7 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       await _clearStoredToken();
       _api.setToken('');
-      _isLoggedIn = false;
-      _goals = [];
-      _userId = null;
-      _userEmail = null;
-      _userNickname = null;
-      _userAvatar = null;
-      _timelineByGoal.clear();
-      _taskViewsByGoalDate.clear();
-      _habits = [];
-      _dailyReviewsByDate.clear();
-      _reviewedDatesByMonth.clear();
-      _habitDoneDatesByMonth.clear();
+      _resetSessionState();
     }
   }
 
@@ -221,37 +198,13 @@ class AppState extends ChangeNotifier {
   Future<void> logout() async {
     _api.setToken('');
     await _clearStoredToken();
-    _isLoggedIn = false;
-    _goals = [];
-    _userId = null;
-    _userEmail = null;
-    _userNickname = null;
-    _userAvatar = null;
-    _timelineByGoal.clear();
-    _taskViewsByGoalDate.clear();
-    _habits = [];
-    _dailyReviewsByDate.clear();
-    _reviewedDatesByMonth.clear();
-    _habitDoneDatesByMonth.clear();
+    _resetSessionState();
     notifyListeners();
   }
 
   void _handleUnauthorized() {
     _api.setToken('');
-    _isLoggedIn = false;
-    _goals = [];
-    _userId = null;
-    _userEmail = null;
-    _userNickname = null;
-    _userAvatar = null;
-    _timelineByGoal.clear();
-    _taskViewsByGoalDate.clear();
-    _habits = [];
-    _dailyReviewsByDate.clear();
-    _reviewedDatesByMonth.clear();
-    _habitDoneDatesByMonth.clear();
-    _globalMessage = '登录状态已过期，请重新登录';
-    _pendingActions.clear();
+    _resetSessionState(globalMessage: '登录状态已过期，请重新登录');
     unawaited(_clearStoredToken());
     notifyListeners();
   }
@@ -264,20 +217,10 @@ class AppState extends ChangeNotifier {
     if (!_isLoggedIn) return;
     try {
       final me = await _api.getMe();
-      _userId = me['id']?.toString();
-      _userEmail = me['email']?.toString();
-      _userNickname = me['nickname']?.toString();
-      _userAvatar = me['avatar']?.toString();
-      if (me['createdAt'] != null) {
-        _userCreatedAt = DateTime.parse(me['createdAt'].toString());
-      }
+      _applyProfileData(me);
     } catch (e) {
       debugPrint('Fetch profile failed: $e');
     }
-  }
-
-  Future<void> updateAvatar(String base64Image) async {
-    await updateProfile(avatar: base64Image);
   }
 
   Future<void> updateProfile({
@@ -290,7 +233,7 @@ class AppState extends ChangeNotifier {
     try {
       final payload = <String, dynamic>{};
       if (nickname != null) payload['nickname'] = nickname;
-      
+
       if (avatar != null) {
         // 剥离 Data URL 前缀 (如 data:image/jpeg;base64,)
         String pureBase64 = avatar;
@@ -299,7 +242,7 @@ class AppState extends ChangeNotifier {
         }
         payload['avatar'] = pureBase64;
       }
-      
+
       if (payload.isEmpty) return;
 
       final result = await _api.updateProfile(payload);
@@ -816,6 +759,34 @@ class AppState extends ChangeNotifier {
     return '${d.year}-$mm-$dd';
   }
 
+  void _applyProfileData(Map<String, dynamic> me) {
+    _userId = me['id']?.toString();
+    _userEmail = me['email']?.toString();
+    _userNickname = me['nickname']?.toString();
+    _userAvatar = me['avatar']?.toString();
+    _userCreatedAt = me['createdAt'] != null
+        ? DateTime.parse(me['createdAt'].toString())
+        : null;
+  }
+
+  void _resetSessionState({String? globalMessage}) {
+    _isLoggedIn = false;
+    _goals = [];
+    _habits = [];
+    _userId = null;
+    _userEmail = null;
+    _userNickname = null;
+    _userAvatar = null;
+    _userCreatedAt = null;
+    _timelineByGoal.clear();
+    _taskViewsByGoalDate.clear();
+    _dailyReviewsByDate.clear();
+    _reviewedDatesByMonth.clear();
+    _habitDoneDatesByMonth.clear();
+    _pendingActions.clear();
+    _globalMessage = globalMessage;
+  }
+
   String _monthKey(DateTime month) {
     final mm = month.month.toString().padLeft(2, '0');
     return '${month.year}-$mm';
@@ -1141,51 +1112,5 @@ class AppState extends ChangeNotifier {
       );
     }
     notifyListeners();
-  }
-
-  Future<void> shareProgress(BuildContext context,
-      {required int streak}) async {
-    final screenshotController = ScreenshotController();
-
-    // Calculate stats for the share card
-    final activeGoals = _goals.where((g) => g.isActive).toList();
-    final int doneTasks =
-        activeGoals.fold<int>(0, (a, g) => a + goalDoneTaskCount(g));
-    final int totalTasks =
-        activeGoals.fold<int>(0, (a, g) => a + goalTotalTaskCount(g));
-    final String nickname =
-        _userNickname ?? _userEmail?.split('@').first ?? 'GoalFlow 用户';
-
-    try {
-      final image = await screenshotController.captureFromWidget(
-        Material(
-          child: ShareCard(
-            goals: activeGoals,
-            doneTasks: doneTasks,
-            totalTasks: totalTasks,
-            streak: streak,
-            nickname: nickname,
-          ),
-        ),
-        delay: const Duration(milliseconds: 100),
-      );
-
-      final tempDir = await getTemporaryDirectory();
-      final String filePath = '${tempDir.path}/goalflow_share.png';
-      final file = File(filePath);
-
-      // Ensure the directory exists
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(image);
-
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(filePath)],
-          text: '我在 GoalFlow 坚持打卡，这是我的今日战报！🎯',
-        ),
-      );
-    } catch (e) {
-      debugPrint('Share failed: $e');
-    }
   }
 }

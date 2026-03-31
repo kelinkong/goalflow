@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import '../models/goal_decomposition.dart';
 import '../theme.dart';
 import '../models/goal.dart';
@@ -95,7 +94,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
       _error = null;
     });
     _addLog('开始调用 AI');
-    _addLog('目标：${_nameCtrl.text.trim()} / ${_totalDays}天');
+    _addLog('目标：${_nameCtrl.text.trim()} / $_totalDays天');
     final desc = _descCtrl.text.trim();
     _addLog(desc.isEmpty ? '当前基础：<空>' : '当前基础：$desc');
     _addLog('每日任务数量：${_taskCountOptions[_taskCountIndex].$1}');
@@ -129,7 +128,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
 
   Future<void> _saveGoal() async {
     final goal = Goal(
-      id: widget.initialGoal?.id ?? const Uuid().v4(),
+      id: widget.initialGoal?.id ?? '',
       name: _nameCtrl.text,
       emoji: _selectedEmoji,
       desc: _descCtrl.text,
@@ -245,7 +244,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
         color: AppColors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -364,7 +363,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Row(children: const [
+                child: const Row(children: [
                   Icon(Icons.arrow_back_ios_new,
                       size: 14, color: AppColors.sub),
                   SizedBox(width: 4),
@@ -445,7 +444,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10)
                 ],
               ),
               child: Wrap(
@@ -486,7 +486,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10)
                 ],
               ),
               child: TextField(
@@ -516,7 +517,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10)
                 ],
               ),
               child: Column(
@@ -545,7 +547,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10)
                 ],
               ),
               child: TextField(
@@ -586,7 +589,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                             ),
                             child: Center(
                               child: Text(
-                                '${d}天',
+                                '$d天',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -641,7 +644,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                                 height: size,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppColors.accent.withOpacity(opacity),
+                                  color: AppColors.accent
+                                      .withValues(alpha: opacity),
                                 ),
                               ),
                             );
@@ -716,11 +720,11 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                       Container(
                         width: 26,
                         height: 26,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                             color: AppColors.pill, shape: BoxShape.circle),
                         child: Center(
                             child: Text('${e.key + 1}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.accent))),
@@ -756,7 +760,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               GestureDetector(
                 onTap: () => setState(() => _step = 'form'),
-                child: Row(children: const [
+                child: const Row(children: [
                   Icon(Icons.arrow_back_ios_new,
                       size: 14, color: AppColors.sub),
                   SizedBox(width: 4),
@@ -843,7 +847,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.04), blurRadius: 12)
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12)
                   ],
                 ),
                 child: Column(
@@ -915,7 +920,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.04), blurRadius: 12)
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 12)
                 ],
               ),
               child: Column(
@@ -988,7 +994,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                             ]),
                           )),
                       if (e.key < (_aiPlan.length - 1))
-                        Divider(
+                        const Divider(
                             height: 1,
                             color: AppColors.border,
                             indent: 52,
@@ -1006,7 +1012,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.03), blurRadius: 6)
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 6)
                 ],
               ),
               child:

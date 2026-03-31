@@ -334,7 +334,7 @@ class _HabitCard extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  habit.todayDone ? '今天已经记下了' : '今天还没有留下记录',
+                  habit.todayDone ? '恭喜你完成 🎉' : '今天还没有留下记录',
                   style: AppTextStyles.caption.copyWith(
                     color: habit.todayDone ? AppColors.success : AppColors.sub,
                   ),
