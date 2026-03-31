@@ -47,7 +47,8 @@ public class AuthController {
         
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);
-        return ResponseEntity.ok(Map.of("token", token));
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        return ResponseEntity.ok(Map.of("token", token, "refreshToken", refreshToken));
     }
 
     @PostMapping("/login")
@@ -57,7 +58,31 @@ public class AuthController {
         );
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         String token = jwtService.generateToken(userDetails);
-        return ResponseEntity.ok(Map.of("token", token));
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        return ResponseEntity.ok(Map.of("token", token, "refreshToken", refreshToken));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
+        final String refreshToken = body.get("refreshToken");
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new BusinessException("refreshToken is required", 400);
+        }
+        try {
+            final String username = jwtService.extractUsername(refreshToken);
+            if (username == null || username.isEmpty()) {
+                throw new BusinessException("Invalid refresh token", 401);
+            }
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (!jwtService.isRefreshTokenValid(refreshToken, userDetails)) {
+                throw new BusinessException("Refresh token invalid or expired", 401);
+            }
+            String newToken = jwtService.generateToken(userDetails);
+            String newRefresh = jwtService.generateRefreshToken(userDetails);
+            return ResponseEntity.ok(Map.of("token", newToken, "refreshToken", newRefresh));
+        } catch (Exception e) {
+            throw new BusinessException("Refresh failed", 401);
+        }
     }
 
     @GetMapping("/me")
