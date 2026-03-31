@@ -22,12 +22,12 @@ class ProgressScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text('来到 GoalFlow 第 $days 天',
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-        content: const Text(
-            '感谢你选择与 GoalFlow 共同成长。\n\n每一天的记录，都是对未来最好的投资。期待见证你更多的精彩时刻。✨'),
+        content: Text(
+            '你已经和 GoalFlow 一起走到第 $days 天。\n\n这些记录不是为了证明什么，而是在帮你看见自己是怎样一点点走过来的。\n\n有起伏也没关系，能继续回来看看，就很好。不要焦虑噢。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('继续努力',
+            child: const Text('知道了',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -46,6 +46,7 @@ class ProgressScreen extends StatelessWidget {
     final state = context.watch<AppState>();
     final goals = state.goals;
     final habits = state.habits.where((item) => item.isActive).toList();
+    final trendPoints = _buildTrendPoints(goals, state);
 
     // 1. 成长天数：从第一个目标创建到现在的总天数
     final int totalDays = _calculateTotalDays(state);
@@ -70,7 +71,7 @@ class ProgressScreen extends StatelessWidget {
                   children: [
                     Text('轨迹', style: AppTextStyles.headline),
                     const SizedBox(height: 4),
-                    Text('在这里，看见你的成长历程',
+                    Text('在这里，看见自己这段时间的变化',
                         style: AppTextStyles.caption.copyWith(
                             fontStyle: FontStyle.italic, fontSize: 14)),
                   ],
@@ -84,14 +85,14 @@ class ProgressScreen extends StatelessWidget {
                   children: [
                     _StatCard(
                       value: '$totalDays',
-                      label: '成长天数',
+                      label: '记录天数',
                       onTap: () => _showGrowthDialog(context, totalDays),
                     ),
                     const SizedBox(width: 10),
                     _StatCard(
                       value: '${reviewRate.round()}%',
-                      label: '复盘深度',
-                      onTap: () => showToast(context, '点击下方日历中的橙色区域，回看那天的思考。'),
+                      label: '复盘覆盖',
+                      onTap: () => showToast(context, '点开下方日历格子，可以回看那天留下的记录。'),
                     ),
                     const SizedBox(width: 10),
                     _StatCard(
@@ -115,9 +116,14 @@ class ProgressScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                 child: Column(
                   children: [
-                    _AlertCard(streak: streak),
+                    _AlertCard(
+                      insight: _buildTrajectoryInsight(
+                        points: trendPoints,
+                        streak: streak,
+                      ),
+                    ),
                     const SizedBox(height: 14),
-                    _TrendChartCard(goals: goals, state: state),
+                    _TrendChartCard(points: trendPoints, state: state),
                   ],
                 ),
               ),
@@ -432,9 +438,7 @@ class _IndicatorDot extends StatelessWidget {
       width: 4,
       height: 4,
       decoration: BoxDecoration(
-        color: completed
-            ? (isDark ? Colors.white : AppColors.accent)
-            : (isDark ? Colors.white.withOpacity(0.3) : AppColors.border),
+        color: completed ? Colors.white : AppColors.border,
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -846,8 +850,8 @@ class _HabitSummaryCardInTimeline extends StatelessWidget {
 }
 
 class _AlertCard extends StatelessWidget {
-  final int streak;
-  const _AlertCard({required this.streak});
+  final _TrajectoryInsight insight;
+  const _AlertCard({required this.insight});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -856,7 +860,10 @@ class _AlertCard extends StatelessWidget {
           color: AppColors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+            )
           ],
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -878,11 +885,7 @@ class _AlertCard extends StatelessWidget {
                         color: AppColors.text)),
                 const SizedBox(height: 5),
                 Text(
-                  streak == 0
-                      ? '轨迹刚开始，先完成今天的一小步。'
-                      : streak >= 7
-                          ? '你已经连续行动 $streak 天，轨迹正在慢慢成形。'
-                          : '你已经连续行动 $streak 天，别让这条线断在今天。',
+                  insight.message,
                   style: const TextStyle(
                       fontSize: 13, color: AppColors.sub, height: 1.65),
                 ),
@@ -891,26 +894,36 @@ class _AlertCard extends StatelessWidget {
       );
 }
 
+class _TrajectoryInsight {
+  final String message;
+
+  const _TrajectoryInsight({required this.message});
+}
+
 class _TrendPoint {
   final DateTime date;
-  final double? goalRate;
-  final double? habitRate;
-  final double? reviewRate;
+  final int taskScore;
+  final int habitScore;
+  final int reviewScore;
 
   const _TrendPoint({
     required this.date,
-    required this.goalRate,
-    required this.habitRate,
-    required this.reviewRate,
+    required this.taskScore,
+    required this.habitScore,
+    required this.reviewScore,
   });
+
+  int get totalScore => taskScore + habitScore + reviewScore;
+
+  bool get hasAnyScore => totalScore > 0;
 }
 
 class _TrendChartCard extends StatefulWidget {
-  final List<Goal> goals;
+  final List<_TrendPoint> points;
   final AppState state;
 
   const _TrendChartCard({
-    required this.goals,
+    required this.points,
     required this.state,
   });
 
@@ -924,16 +937,16 @@ class _TrendChartCardState extends State<_TrendChartCard> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      
+
       // Fetch habits list to ensure we have habit data
       unawaited(widget.state.fetchHabits(silent: true));
-      
+
       // Fetch goal timelines for trend data
-      for (final goal in widget.goals) {
+      for (final goal in widget.state.goals) {
         unawaited(widget.state.fetchGoalTimeline(goal.id, silent: true));
       }
-      
-      // Fetch habit calendar for trend data
+
+      // Fetch calendars for the 30-day chart window.
       final now = DateTime.now();
       final currentMonth = DateTime(now.year, now.month, 1);
       final previousMonth = DateTime(now.year, now.month - 1, 1);
@@ -943,49 +956,22 @@ class _TrendChartCardState extends State<_TrendChartCard> {
       if (!widget.state.isHabitMonthLoaded(previousMonth)) {
         unawaited(widget.state.fetchHabitCalendar(previousMonth, silent: true));
       }
-    });
-  }
-
-  List<_TrendPoint> _buildPoints() {
-    final today = DateTime.now();
-    return List.generate(30, (index) {
-      final date = DateTime(
-        today.year,
-        today.month,
-        today.day,
-      ).subtract(Duration(days: 29 - index));
-
-      final allTasks = widget.goals
-          .expand((goal) => widget.state.taskViewsForDate(goal, date))
-          .toList();
-      final doneTasks = allTasks.where((task) => task.done).length;
-      final goalScore =
-          allTasks.isEmpty ? null : doneTasks / allTasks.length.toDouble();
-
-      final totalHabits = widget.state.totalHabitCountOn(date);
-      final doneHabits = widget.state.doneHabitCountOn(date);
-      final habitScore =
-          totalHabits == 0 ? null : doneHabits / totalHabits.toDouble();
-      final reviewScore = widget.state.hasReviewOn(date) ? 1.0 : 0.0;
-
-      return _TrendPoint(
-        date: date,
-        goalRate: goalScore,
-        habitRate: habitScore,
-        reviewRate: reviewScore,
-      );
+      if (!widget.state.isDailyReviewMonthLoaded(currentMonth)) {
+        unawaited(
+            widget.state.fetchDailyReviewCalendar(currentMonth, silent: true));
+      }
+      if (!widget.state.isDailyReviewMonthLoaded(previousMonth)) {
+        unawaited(
+            widget.state.fetchDailyReviewCalendar(previousMonth, silent: true));
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final points = _buildPoints();
-    final hasAnyData = points.any(
-      (point) =>
-          point.goalRate != null ||
-          point.habitRate != null ||
-          point.reviewRate != null,
-    );
+    final points = widget.points;
+    final hasAnyData = points.any((point) => point.hasAnyScore);
+    final maxScore = _maxDailyScore(points);
 
     return Container(
       width: double.infinity,
@@ -993,9 +979,6 @@ class _TrendChartCardState extends State<_TrendChartCard> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1010,7 +993,7 @@ class _TrendChartCardState extends State<_TrendChartCard> {
           ),
           const SizedBox(height: 6),
           Text(
-            '黑线是目标，绿线是习惯，橙线是复盘（7天移动平均）。',
+            '完成 1 个任务 +5 分，完成 1 个习惯 +5 分，写复盘 +5 分。',
             style: AppTextStyles.caption.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 16),
@@ -1031,7 +1014,10 @@ class _TrendChartCardState extends State<_TrendChartCard> {
             SizedBox(
               height: 180,
               child: CustomPaint(
-                painter: _TrendChartPainter(points: points),
+                painter: _TrendChartPainter(
+                  points: points,
+                  maxScore: maxScore,
+                ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
                   child: Column(
@@ -1067,8 +1053,12 @@ class _TrendChartCardState extends State<_TrendChartCard> {
 
 class _TrendChartPainter extends CustomPainter {
   final List<_TrendPoint> points;
+  final int maxScore;
 
-  const _TrendChartPainter({required this.points});
+  const _TrendChartPainter({
+    required this.points,
+    required this.maxScore,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1084,7 +1074,7 @@ class _TrendChartPainter extends CustomPainter {
       ..color = AppColors.border
       ..strokeWidth = 1;
     for (final ratio in [0.0, 0.5, 1.0]) {
-      final y = topPad + chartHeight * (1 - ratio);
+      final y = topPad + chartHeight * ratio;
       canvas.drawLine(
         Offset(leftPad, y),
         Offset(size.width - rightPad, y),
@@ -1092,93 +1082,180 @@ class _TrendChartPainter extends CustomPainter {
       );
     }
 
-    _drawLine(
+    _drawScoreLine(
       canvas,
       chartWidth: chartWidth,
       chartHeight: chartHeight,
       leftPad: leftPad,
       topPad: topPad,
-      values: _movingAverage(points.map((point) => point.goalRate).toList()),
-      color: AppColors.accent,
-    );
-    _drawLine(
-      canvas,
-      chartWidth: chartWidth,
-      chartHeight: chartHeight,
-      leftPad: leftPad,
-      topPad: topPad,
-      values: _movingAverage(points.map((point) => point.habitRate).toList()),
+      values: points.map((point) => point.totalScore).toList(),
+      maxScore: maxScore,
       color: AppColors.success,
-    );
-    _drawLine(
-      canvas,
-      chartWidth: chartWidth,
-      chartHeight: chartHeight,
-      leftPad: leftPad,
-      topPad: topPad,
-      values: _movingAverage(points.map((point) => point.reviewRate).toList()),
-      color: const Color(0xFFff8c42),
     );
   }
 
-  void _drawLine(
+  void _drawScoreLine(
     Canvas canvas, {
     required double chartWidth,
     required double chartHeight,
     required double leftPad,
     required double topPad,
-    required List<double?> values,
+    required List<int> values,
+    required int maxScore,
     required Color color,
   }) {
-    final path = Path();
-    final pointPaint = Paint()..color = color;
     final linePaint = Paint()
       ..color = color
-      ..strokeWidth = 1.2
+      ..strokeWidth = 1.15
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-
-    var hasStarted = false;
+    final dotPaint = Paint()..color = color;
+    Offset? previousPoint;
     for (var i = 0; i < values.length; i++) {
-      final value = values[i];
-      if (value == null) {
-        hasStarted = false;
-        continue;
-      }
       final dx = leftPad + chartWidth * (i / (values.length - 1));
-      final dy = topPad + chartHeight * (1 - value.clamp(0.0, 1.0));
-      if (!hasStarted) {
-        path.moveTo(dx, dy);
-        hasStarted = true;
-      } else {
-        path.lineTo(dx, dy);
+      final heightRatio = maxScore == 0 ? 0.0 : values[i] / maxScore;
+      final dy =
+          topPad + chartHeight - chartHeight * heightRatio.clamp(0.0, 1.0);
+      final point = Offset(dx, dy);
+      if (previousPoint != null) {
+        canvas.drawLine(previousPoint, point, linePaint);
       }
-      canvas.drawCircle(Offset(dx, dy), 1.4, pointPaint);
+      canvas.drawCircle(point, 1.9, dotPaint);
+      previousPoint = point;
     }
-
-    canvas.drawPath(path, linePaint);
-  }
-
-  List<double?> _movingAverage(List<double?> values, [int window = 7]) {
-    final n = values.length;
-    final result = List<double?>.filled(n, null);
-    for (var i = 0; i < n; i++) {
-      var sum = 0.0;
-      var count = 0;
-      final start = math.max(0, i - window + 1);
-      for (var j = start; j <= i; j++) {
-        final value = values[j];
-        if (value == null) continue;
-        sum += value;
-        count++;
-      }
-      if (count > 0) result[i] = sum / count;
-    }
-    return result;
   }
 
   @override
   bool shouldRepaint(covariant _TrendChartPainter oldDelegate) =>
       oldDelegate.points != points;
+}
+
+List<_TrendPoint> _buildTrendPoints(List<Goal> goals, AppState state,
+    {int days = 30}) {
+  final today = DateTime.now();
+  final points = List.generate(days, (index) {
+    final date = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: days - 1 - index));
+
+    final allTasks =
+        goals.expand((goal) => state.taskViewsForDate(goal, date)).toList();
+    final doneTasks = allTasks.where((task) => task.done).length;
+    final totalHabits = state.doneHabitCountOn(date);
+    final hasReview = state.hasReviewOn(date);
+
+    return _TrendPoint(
+      date: date,
+      taskScore: doneTasks * 5,
+      habitScore: totalHabits * 5,
+      reviewScore: hasReview ? 5 : 0,
+    );
+  });
+  return points;
+}
+
+_TrajectoryInsight _buildTrajectoryInsight({
+  required List<_TrendPoint> points,
+  required int streak,
+}) {
+  final recent = points.skip(math.max(0, points.length - 7)).toList();
+  final previous = points.length > 7
+      ? points.skip(math.max(0, points.length - 14)).take(7).toList()
+      : const <_TrendPoint>[];
+  final recentTotal = _averageScore(recent);
+  final previousTotal = _averageScore(previous);
+  final delta = recentTotal - previousTotal;
+  final today = points.isEmpty ? null : points.last;
+  final recentTask = _averageTaskScore(recent);
+  final recentHabit = _averageHabitScore(recent);
+  final recentReview = _averageReviewScore(recent);
+
+  if (recentTotal == 0) {
+    return const _TrajectoryInsight(
+      message: '轨迹还在积累数据，先按自己的节奏记录几天，再回来看看变化。',
+    );
+  }
+
+  if (streak == 0 && recentTotal >= 12 && (today?.totalScore ?? 0) <= 5) {
+    return const _TrajectoryInsight(
+      message: '前几天已经有一些积累了，今天补一个小动作，这条轨迹就会继续往前走。',
+    );
+  }
+
+  if (delta >= 4 && recentTotal >= 15) {
+    return _TrajectoryInsight(
+      message: streak >= 7
+          ? '最近 7 天比前一周更稳定，连续 $streak 天的节奏对你是有帮助的。'
+          : '最近 7 天在回升，说明你已经找到一点适合自己的节奏了。',
+    );
+  }
+
+  if (recentHabit < recentTask && recentHabit <= recentReview) {
+    return const _TrajectoryInsight(
+      message: '这段时间习惯完成度相对弱一些，先把最基础的一项稳下来就够了。',
+    );
+  }
+
+  if (recentTask < recentHabit && recentTask <= recentReview) {
+    return const _TrajectoryInsight(
+      message: '目标推进这一块可以再聚焦一点，先完成一个关键任务会更轻松。',
+    );
+  }
+
+  if (recentReview <= 1 && recentTotal >= 10) {
+    return const _TrajectoryInsight(
+      message: '这段时间行动不少，如果偶尔补一两次回看，会更容易看清自己的节奏。',
+    );
+  }
+
+  if (streak >= 7 && recentTotal >= 15) {
+    return _TrajectoryInsight(
+      message: '你已经连续行动 $streak 天，最近的变化是在一点点累积出来的。',
+    );
+  }
+
+  if (streak > 0) {
+    return _TrajectoryInsight(
+      message: '你已经连续行动 $streak 天，今天继续做一点，轨迹就会自然延续下去。',
+    );
+  }
+
+  return const _TrajectoryInsight(
+    message: '这几天有起伏很正常，先把今天过成“有记录的一天”就可以了。',
+  );
+}
+
+double _averageScore(List<_TrendPoint> points) {
+  if (points.isEmpty) return 0;
+  final total = points.fold<int>(0, (sum, point) => sum + point.totalScore);
+  return total / points.length;
+}
+
+double _averageTaskScore(List<_TrendPoint> points) {
+  if (points.isEmpty) return 0;
+  final total = points.fold<int>(0, (sum, point) => sum + point.taskScore);
+  return total / points.length;
+}
+
+double _averageHabitScore(List<_TrendPoint> points) {
+  if (points.isEmpty) return 0;
+  final total = points.fold<int>(0, (sum, point) => sum + point.habitScore);
+  return total / points.length;
+}
+
+double _averageReviewScore(List<_TrendPoint> points) {
+  if (points.isEmpty) return 0;
+  final total = points.fold<int>(0, (sum, point) => sum + point.reviewScore);
+  return total / points.length;
+}
+
+int _maxDailyScore(List<_TrendPoint> points) {
+  final maxValue = points.fold<int>(
+    0,
+    (currentMax, point) => math.max(currentMax, point.totalScore),
+  );
+  return maxValue <= 0 ? 5 : maxValue;
 }

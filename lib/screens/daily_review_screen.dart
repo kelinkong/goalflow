@@ -101,7 +101,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
       }
     }
     if (_priorityCtrl.text.trim().isEmpty) {
-      showToast(context, '明日最重要的事不能为空');
+      showToast(context, '给明天留一件最想照顾的事吧');
       return;
     }
 
@@ -121,7 +121,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
       final saved = await context.read<AppState>().saveDailyReview(review);
       _bindReview(saved);
       if (!mounted) return;
-      showToast(context, '每日复盘已保存');
+      showToast(context, '今天的记录已经保存好了');
       setState(() {
         _hasExistingReview = true;
       });
@@ -181,7 +181,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
                   child: Text(
                     isSaving
                         ? '保存中...'
-                        : (_hasExistingReview ? '保存复盘' : '开始复盘'),
+                        : (_hasExistingReview ? '保存今天的记录' : '写下今天的记录'),
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700),
                   ),
@@ -215,7 +215,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
                     style: AppTextStyles.headline.copyWith(fontSize: 24)),
                 const SizedBox(height: 4),
                 Text(
-                  DateFormat('yyyy年M月d日 EEEE', 'zh').format(_selectedDate),
+                  '${DateFormat('yyyy年M月d日 EEEE', 'zh').format(_selectedDate)}  ·  一句话也可以',
                   style: AppTextStyles.caption.copyWith(
                     fontStyle: FontStyle.italic,
                     fontSize: 13,
@@ -306,7 +306,8 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
             controller: _commentCtrls[dimension],
             minLines: 1,
             maxLines: 4,
-            style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.6),
+            style: const TextStyle(
+                fontSize: 14, color: AppColors.text, height: 1.6),
             decoration: InputDecoration(
               hintText: '描述今天在${dimension.label}上的真实感受...',
               hintStyle: AppTextStyles.caption.copyWith(fontSize: 13),
@@ -339,9 +340,13 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.white : Colors.transparent,
                 borderRadius: BorderRadius.circular(9),
-                boxShadow: isSelected 
-                  ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]
-                  : null,
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4)
+                      ]
+                    : null,
               ),
               child: Opacity(
                 opacity: isSelected ? 1.0 : 0.4,
@@ -359,10 +364,14 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
 
   String _getStatusEmoji(DailyReviewStatus status) {
     switch (status) {
-      case DailyReviewStatus.good: return '🌟';
-      case DailyReviewStatus.normal: return '🙂';
-      case DailyReviewStatus.bad: return '😐';
-      default: return '？';
+      case DailyReviewStatus.good:
+        return '🌟';
+      case DailyReviewStatus.normal:
+        return '🙂';
+      case DailyReviewStatus.bad:
+        return '😐';
+      default:
+        return '？';
     }
   }
 
@@ -386,11 +395,13 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.rocket_launch_rounded, size: 16, color: Colors.orangeAccent),
+              const Icon(Icons.rocket_launch_rounded,
+                  size: 16, color: Colors.orangeAccent),
               const SizedBox(width: 8),
               Text(
-                '明日最重要的事', 
-                style: AppTextStyles.title.copyWith(fontSize: 14, fontWeight: FontWeight.w800),
+                '明日最重要的事',
+                style: AppTextStyles.title
+                    .copyWith(fontSize: 14, fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -399,7 +410,8 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
             controller: _priorityCtrl,
             minLines: 1,
             maxLines: 2,
-            style: const TextStyle(fontSize: 14, color: AppColors.text, height: 1.6),
+            style: const TextStyle(
+                fontSize: 14, color: AppColors.text, height: 1.6),
             decoration: InputDecoration(
               hintText: '只写一件最重要的事，开启新的一天...',
               hintStyle: AppTextStyles.caption.copyWith(fontSize: 13),

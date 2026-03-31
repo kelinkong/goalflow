@@ -43,11 +43,11 @@ class SettingsScreen extends StatelessWidget {
           final file = await picker.pickImage(
             source: ImageSource.gallery,
             imageQuality: 50, // 降低质量
-            maxWidth: 512,    // 缩小尺寸
+            maxWidth: 512, // 缩小尺寸
             maxHeight: 512,
           );
           if (file == null) return;
-          
+
           final bytes = await file.readAsBytes();
           // 检查体积，如果原始体积超过 700KB，则提醒（虽然 512x512 50% 很难超过）
           if (bytes.length > 700 * 1024) {
@@ -272,12 +272,12 @@ class SettingsScreen extends StatelessWidget {
                             .setReminderEnabled(!wasEnabled);
                         if (!context.mounted) return;
                         if (!enabled && !wasEnabled) {
-                          showToast(context, '未获得通知权限，无法开启提醒');
+                          showToast(context, '还没有通知权限，所以暂时没法开启提醒');
                           return;
                         }
                         showToast(
                           context,
-                          wasEnabled ? '已关闭提醒' : '已开启提醒',
+                          wasEnabled ? '提醒已关闭' : '提醒已开启',
                         );
                       },
                     ),
@@ -286,7 +286,7 @@ class SettingsScreen extends StatelessWidget {
                       sub: state.reminderTimeLabel,
                       onTap: () async {
                         if (!state.reminderEnabled) {
-                          showToast(context, '先开启每日打卡提醒');
+                          showToast(context, '先把每日提醒打开，再设置时间');
                           return;
                         }
                         final appState = context.read<AppState>();
@@ -299,7 +299,7 @@ class SettingsScreen extends StatelessWidget {
                         if (!context.mounted) return;
                         showToast(
                           context,
-                          '提醒时间已更新为 ${appState.reminderTimeLabel}',
+                          '提醒时间已调整为 ${appState.reminderTimeLabel}',
                         );
                       },
                     ),
@@ -343,7 +343,7 @@ class SettingsScreen extends StatelessWidget {
                                             ClipboardData(text: exportJson));
                                         if (!context.mounted) return;
                                         Navigator.pop(context);
-                                        showToast(context, '全量数据已复制到剪贴板');
+                                        showToast(context, '全部数据已经复制到剪贴板');
                                       },
                                       child: const Text('复制'),
                                     ),
@@ -365,18 +365,18 @@ class SettingsScreen extends StatelessWidget {
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(20)),
-                                      title: const Text('确定要清空吗？'),
+                                      title: const Text('确定要清空这些记录吗？'),
                                       content: Text(
-                                          '你要清空自己 $dateRange 的“人生”吗？\n\n此操作将永久删除所有目标、习惯和复盘记录，且无法找回。'),
+                                          '这会删除你从 $dateRange 以来留下的目标、习惯和复盘记录。\n\n删除后将无法恢复。'),
                                       actions: [
                                         TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(context, false),
-                                            child: const Text('再想想')),
+                                            child: const Text('先保留')),
                                         TextButton(
                                           onPressed: () =>
                                               Navigator.pop(context, true),
-                                          child: const Text('确定清空',
+                                          child: const Text('确认清空',
                                               style: TextStyle(
                                                   color: AppColors.danger)),
                                         ),
@@ -387,7 +387,7 @@ class SettingsScreen extends StatelessWidget {
                               if (!confirmed) return;
                               await state.clearHistory();
                               if (!context.mounted) return;
-                              showToast(context, '历史已归零，开启新篇章');
+                              showToast(context, '这些记录已经清空了');
                             }
                           : null,
                     ),

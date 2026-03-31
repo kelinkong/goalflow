@@ -251,7 +251,7 @@ class _HabitCard extends StatelessWidget {
                       if (!context.mounted) return;
                       showToast(
                         context,
-                        habit.todayDone ? '已取消打卡' : '已完成今日习惯',
+                        habit.todayDone ? '已取消今天的记录' : '已经为今天留下一次记录',
                       );
                     } catch (e) {
                       if (!context.mounted) return;
@@ -295,7 +295,7 @@ class _HabitCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         habit.category == null || habit.category!.isEmpty
-                            ? '坚持塑造你的长期身份'
+                            ? '把想长期保留的行动，慢慢放进日常里'
                             : habit.category!,
                         style: AppTextStyles.caption.copyWith(height: 1.4),
                       ),
@@ -334,7 +334,7 @@ class _HabitCard extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  habit.todayDone ? '今天已完成' : '今天还没打卡',
+                  habit.todayDone ? '今天已经记下了' : '今天还没有留下记录',
                   style: AppTextStyles.caption.copyWith(
                     color: habit.todayDone ? AppColors.success : AppColors.sub,
                   ),

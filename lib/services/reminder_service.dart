@@ -98,13 +98,13 @@ class ReminderService {
     await _notifications.zonedSchedule(
       _dailyReminderId,
       'GoalFlow 每日提醒',
-      '回来看一眼今天的目标、习惯和复盘。',
+      '如果你愿意，现在可以回来看看今天。',
       scheduled,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'goalflow_daily_reminder',
           '每日提醒',
-          channelDescription: '提醒你完成今天的目标、习惯和复盘',
+          channelDescription: '轻提醒你回来看看今天的目标、习惯和记录',
           importance: Importance.high,
           priority: Priority.high,
         ),

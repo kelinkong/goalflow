@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   _isToday
-                      ? '今天，${DateFormat('M月d日').format(_selectedDate)}'
+                      ? '今天，${DateFormat('M月d日').format(_selectedDate)}, 不要焦虑'
                       : DateFormat('M月d日 EEEE', 'zh').format(_selectedDate),
                   style: AppTextStyles.caption.copyWith(
                     fontStyle: FontStyle.italic,
@@ -321,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasReview ? '今日复盘已完成' : '去复盘',
+                  hasReview ? '今天已经留过记录' : '给今天留一点记录',
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  hasReview ? '记录了生活，就留住了时间。' : '理解今天，开启明天。',
+                  hasReview ? '你已经为今天留下了一点痕迹。' : '一句话也可以，从现在的感受开始。',
                   style: AppTextStyles.caption.copyWith(fontSize: 12),
                 ),
               ],
@@ -356,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: Text(hasReview ? '查看' : '开始'),
+            child: Text(hasReview ? '回看' : '去写'),
           ),
         ],
       ),
