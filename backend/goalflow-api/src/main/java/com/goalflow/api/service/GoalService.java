@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,13 +68,56 @@ public class GoalService {
         return toDTO(goal, planItems);
     }
 
-    public List<GoalDTO> getGoalsByUser(User user) {
-        List<Goal> goals = goalMapper.selectList(
-                new LambdaQueryWrapper<Goal>().eq(Goal::getUserId, user.getId())
+    public java.util.Map<String, Object> getGoalsByUser(User user, Integer page, Integer size) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Goal> pageConfig = 
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+
+        goalMapper.selectPage(pageConfig, 
+                new LambdaQueryWrapper<Goal>()
+                    .eq(Goal::getUserId, user.getId())
+                    .orderByDesc(Goal::getCreatedAt)
         );
-        if (goals.isEmpty()) return Collections.emptyList();
-        return goals.stream()
+
+        List<GoalDTO> content = pageConfig.getRecords().stream()
                 .map(this::toSummaryDTO)
+                .toList();
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("content", content);
+        result.put("totalPages", pageConfig.getPages());
+        result.put("totalElements", pageConfig.getTotal());
+        result.put("currentPage", pageConfig.getCurrent());
+
+        return result;
+    }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", content);
+        result.put("totalElements", pageConfig.getTotal());
+        result.put("totalPages", pageConfig.getPages());
+        result.put("page", pageConfig.getCurrent());
+        result.put("size", pageConfig.getSize());
+        return result;
+    }
+
+    public List<GoalDTO> getAllGoalsByUser(User user) {
+        List<Goal> goals = goalMapper.selectList(
+                new LambdaQueryWrapper<Goal>()
+                        .eq(Goal::getUserId, user.getId())
+                        .orderByDesc(Goal::getCreatedAt)
+        );
+        if (goals.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> goalIds = goals.stream().map(Goal::getId).toList();
+        Map<Long, List<GoalPlanItem>> planItemsByGoalId = goalPlanItemMapper.selectList(
+                        new LambdaQueryWrapper<GoalPlanItem>().in(GoalPlanItem::getGoalId, goalIds)
+                ).stream()
+                .collect(Collectors.groupingBy(GoalPlanItem::getGoalId));
+
+        return goals.stream()
+                .map(goal -> toDTO(goal, planItemsByGoalId.getOrDefault(goal.getId(), Collections.emptyList())))
                 .toList();
     }
 

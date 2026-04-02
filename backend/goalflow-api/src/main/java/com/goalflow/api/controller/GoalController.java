@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/goals")
@@ -33,9 +34,13 @@ public class GoalController {
     }
 
     @GetMapping
-    public ResponseEntity<List<GoalDTO>> getGoals(@AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<Map<String, Object>> getGoals(
+            @AuthenticationPrincipal UserDetails principal,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
         User user = userService.requireByEmail(principal.getUsername());
-        return ResponseEntity.ok(goalService.getGoalsByUser(user));
+        return ResponseEntity.ok(goalService.getGoalsByUser(user, page, size));
     }
 
     @GetMapping("/{id}")

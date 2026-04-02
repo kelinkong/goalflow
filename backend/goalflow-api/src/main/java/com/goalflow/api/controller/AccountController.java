@@ -36,7 +36,7 @@ public class AccountController {
     @GetMapping("/export")
     public ResponseEntity<Map<String, Object>> exportData(@AuthenticationPrincipal UserDetails principal) {
         User user = userService.requireByEmail(principal.getUsername());
-        List<GoalDTO> goals = goalService.getGoalsByUser(user);
+        List<GoalDTO> goals = goalService.getAllGoalsByUser(user);
         List<DayRecord> dayRecords = dayRecordMapper.selectList(
                 new LambdaQueryWrapper<DayRecord>().eq(DayRecord::getUserId, user.getId())
         );

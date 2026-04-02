@@ -260,8 +260,23 @@ class AppState extends ChangeNotifier {
   Future<void> fetchGoals() async {
     if (!_isLoggedIn) return;
     try {
-      final remoteGoalsData = await _api.getGoals();
-      _goals = remoteGoalsData.map((data) => Goal.fromJson(data)).toList();
+      const pageSize = 20;
+      final allGoals = <Goal>[];
+      var page = 1;
+      var totalPages = 1;
+
+      while (page <= totalPages) {
+        final response = await _api.getGoals(page: page, size: pageSize);
+        final content = (response['content'] as List? ?? const [])
+            .cast<Map<String, dynamic>>();
+        allGoals.addAll(content.map((data) => Goal.fromJson(data)));
+
+        final remoteTotalPages = (response['totalPages'] as num?)?.toInt() ?? 1;
+        totalPages = remoteTotalPages < 1 ? 1 : remoteTotalPages;
+        page++;
+      }
+
+      _goals = allGoals;
       await _hydrateTimelinesForGoals();
       notifyListeners();
     } catch (e) {

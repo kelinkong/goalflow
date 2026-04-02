@@ -203,18 +203,17 @@ class ApiService {
 
   // ── Goals APIs ─────────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>> getGoals() async {
+  Future<Map<String, dynamic>> getGoals({int page = 1, int size = 10}) async {
     final response = await _send(
       () => http.get(
-        Uri.parse('$baseUrl/api/goals'),
+        Uri.parse('$baseUrl/api/goals?page=$page&size=$size'),
         headers: _headers,
       ),
       action: '获取目标列表',
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.cast<Map<String, dynamic>>();
+      return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
       _throwFriendlyError(response, action: '获取目标列表');
     }

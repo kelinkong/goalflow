@@ -4,8 +4,8 @@ import { BASE_URL, REQUEST_TIMEOUT, jsonHeaders, logFailure, setupAuth } from '.
 
 export const options = {
   stages: [
-    { duration: '30s', target: 10 },
-    { duration: '1m', target: 50 },
+    { duration: '30s', target: 100 },
+    { duration: '1m', target: 500 },
     { duration: '30s', target: 0 },
   ],
 };
@@ -27,5 +27,6 @@ export default function (data) {
     logFailure('goals list', res);
   }
 
-  sleep(1);
+  // 缩短 sleep，模拟更高频的访问压力
+  sleep(0.5);
 }
