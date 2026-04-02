@@ -269,6 +269,30 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<Goal?> fetchGoalDetail(String goalId, {bool silent = false}) async {
+    if (!_isLoggedIn) return null;
+    try {
+      final raw = await _api.getGoal(goalId);
+      final detailedGoal = Goal.fromJson(raw);
+      final index = _goals.indexWhere((goal) => goal.id == goalId);
+      if (index != -1) {
+        _goals[index] = detailedGoal;
+      } else {
+        _goals = [detailedGoal, ..._goals];
+      }
+      if (!silent) {
+        notifyListeners();
+      }
+      return detailedGoal;
+    } catch (e) {
+      debugPrint('Fetch goal detail failed: $e');
+      if (!silent) {
+        rethrow;
+      }
+      return null;
+    }
+  }
+
   Future<void> fetchHabits({bool silent = false}) async {
     if (!_isLoggedIn) return;
     try {
@@ -974,7 +998,20 @@ class AppState extends ChangeNotifier {
   }
 
   int goalTotalTaskCount(Goal goal) {
-    return goal.taskPlan.fold<int>(0, (sum, day) => sum + day.length);
+    if (goal.taskPlan.isNotEmpty) {
+      return goal.taskPlan.fold<int>(0, (sum, day) => sum + day.length);
+    }
+    final timeline = _timelineByGoal[goal.id];
+    if (timeline == null || timeline.isEmpty) {
+      return 0;
+    }
+    final taskKeys = <String>{};
+    for (final day in timeline) {
+      for (final task in day.tasks) {
+        taskKeys.add(task.key);
+      }
+    }
+    return taskKeys.length;
   }
 
   int goalDoneTaskCount(Goal goal) {

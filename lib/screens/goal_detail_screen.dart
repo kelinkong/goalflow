@@ -22,6 +22,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   int _tab = 0; // 0=today 1=timeline
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AppState>().fetchGoalDetail(widget.goalId, silent: true);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final matches = state.goals.where((g) => g.id == widget.goalId);
@@ -114,11 +123,20 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               ),
               if (!goal.isDone) ...[
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    final appState = context.read<AppState>();
+                    final detailedGoal =
+                        await appState.fetchGoalDetail(goal.id, silent: true);
+                    final latestGoal = detailedGoal ??
+                        appState.goals
+                            .where((g) => g.id == goal.id)
+                            .firstOrNull ??
+                        goal;
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => NewGoalScreen(initialGoal: goal),
+                        builder: (_) => NewGoalScreen(initialGoal: latestGoal),
                       ),
                     );
                   },

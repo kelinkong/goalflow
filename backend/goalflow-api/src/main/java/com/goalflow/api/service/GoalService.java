@@ -72,16 +72,8 @@ public class GoalService {
                 new LambdaQueryWrapper<Goal>().eq(Goal::getUserId, user.getId())
         );
         if (goals.isEmpty()) return Collections.emptyList();
-
-        List<Long> goalIds = goals.stream().map(Goal::getId).toList();
-        List<GoalPlanItem> planItems = goalPlanItemMapper.selectList(
-                new LambdaQueryWrapper<GoalPlanItem>().in(GoalPlanItem::getGoalId, goalIds)
-        );
-        Map<Long, List<GoalPlanItem>> byGoal = planItems.stream()
-                .collect(Collectors.groupingBy(GoalPlanItem::getGoalId));
-
         return goals.stream()
-                .map(goal -> toDTO(goal, byGoal.getOrDefault(goal.getId(), List.of())))
+                .map(this::toSummaryDTO)
                 .toList();
     }
 
@@ -159,6 +151,18 @@ public class GoalService {
                 .status(goal.getStatus() == null ? "ACTIVE" : goal.getStatus())
                 .createdAt(goal.getCreatedAt())
                 .taskPlan(taskPlan)
+                .build();
+    }
+
+    private GoalDTO toSummaryDTO(Goal goal) {
+        return GoalDTO.builder()
+                .id(goal.getId().toString())
+                .name(goal.getName())
+                .emoji(goal.getEmoji())
+                .description(goal.getDescription())
+                .totalDays(goal.getTotalDays())
+                .status(goal.getStatus() == null ? "ACTIVE" : goal.getStatus())
+                .createdAt(goal.getCreatedAt())
                 .build();
     }
 
