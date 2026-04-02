@@ -91,15 +91,6 @@ public class GoalService {
         return result;
     }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("content", content);
-        result.put("totalElements", pageConfig.getTotal());
-        result.put("totalPages", pageConfig.getPages());
-        result.put("page", pageConfig.getCurrent());
-        result.put("size", pageConfig.getSize());
-        return result;
-    }
-
     public List<GoalDTO> getAllGoalsByUser(User user) {
         List<Goal> goals = goalMapper.selectList(
                 new LambdaQueryWrapper<Goal>()

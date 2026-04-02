@@ -725,9 +725,37 @@ class AppState extends ChangeNotifier {
     if (count >= _dailyAiDecomposeLimit) {
       throw Exception('今天的 AI 拆解次数已达上限（10次），请明天再试');
     }
-    final result = await _api.decompose(goal.toJson());
-    await _incrementTodayDecomposeCount(count);
-    return result;
+
+    // 1. 提交任务
+    final submitRes = await _api.decompose(goal.toJson());
+    final taskId = submitRes['taskId']?.toString();
+    if (taskId == null) {
+      throw Exception('Failed to get taskId for decomposition');
+    }
+
+    // 2. 开启轮询
+    var retryCount = 0;
+    const maxRetries = 45; // 最多等 90 秒 (2s * 45)
+    
+    while (retryCount < maxRetries) {
+      await Future.delayed(const Duration(seconds: 2));
+      final statusRes = await _api.getDecomposeStatus(taskId);
+      final status = statusRes['status']?.toString();
+
+      if (status == 'COMPLETED') {
+        final data = statusRes['data'] as Map<String, dynamic>;
+        await _incrementTodayDecomposeCount(count);
+        return GoalDecomposition.fromJson(data);
+      } else if (status == 'FAILED') {
+        final error = statusRes['error']?.toString() ?? 'Unknown error';
+        throw Exception('AI 拆解失败: $error');
+      }
+      
+      // 如果是 PENDING 则继续
+      retryCount++;
+    }
+
+    throw Exception('AI 拆解超时，请稍后在任务列表查看');
   }
 
   Future<String> exportGoalData() async {

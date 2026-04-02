@@ -53,13 +53,44 @@ public class GoalController {
     }
 
     @PostMapping("/decompose")
-    public ResponseEntity<GoalDecompositionDTO> decompose(@RequestBody GoalDTO goalDTO) {
-        return ResponseEntity.ok(aiService.decomposeGoalDetailed(
+    public ResponseEntity<?> decompose(
+            @AuthenticationPrincipal UserDetails principal,
+            @RequestBody GoalDTO goalDTO
+    ) {
+        User user = userService.requireByEmail(principal.getUsername());
+
+        // 尝试获取 AI 许可
+        if (!aiService.tryAcquireAiPermit()) {
+            java.util.Map<String, String> error = new java.util.HashMap<>();
+            error.put("message", "当前 AI 拆解资源已达上限，请 30 秒后再试");
+            return ResponseEntity.status(429).body(error);
+        }
+
+        String taskId = java.util.UUID.randomUUID().toString();
+        aiService.decomposeGoalAsync(
+                taskId,
+                user.getId(),
                 goalDTO.getName(),
                 goalDTO.getDescription(),
                 goalDTO.getTotalDays(),
                 goalDTO.getTaskCount()
-        ));
+        );
+        java.util.Map<String, String> response = new java.util.HashMap<>();
+        response.put("taskId", taskId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/decompose/status/{taskId}")
+    public ResponseEntity<?> getDecomposeStatus(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable String taskId
+    ) {
+        User user = userService.requireByEmail(principal.getUsername());
+        AIService.AsyncTaskResult result = aiService.getTaskResult(taskId, user.getId());
+        if (result == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}/timeline")

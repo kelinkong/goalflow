@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class AIService {
 
     private static final Logger log = LoggerFactory.getLogger(AIService.class);
+    private static final long TASK_CACHE_TTL_MILLIS = 10 * 60 * 1000L;
 
     @Value("${openai.api-key}")
     private String apiKey;
@@ -45,9 +47,80 @@ public class AIService {
     private final ObjectMapper objectMapper;
     private final WebClient.Builder webClientBuilder;
 
+    // 全局并发控制：最多允许 5 个 AI 任务同时执行
+    private final java.util.concurrent.Semaphore aiSemaphore = new java.util.concurrent.Semaphore(5);
+
+    // 用于暂存异步任务结果 (Key: taskId, Value: 结果对象)
+    private final Map<String, AsyncTaskResult> taskCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static class AsyncTaskResult {
+        public String status; // PENDING, COMPLETED, FAILED
+        public Long userId;
+        public GoalDecompositionDTO data;
+        public String error;
+        public long expiresAt;
+    }
+
     public AIService(ObjectMapper objectMapper, WebClient.Builder webClientBuilder) {
         this.objectMapper = objectMapper;
         this.webClientBuilder = webClientBuilder;
+    }
+
+    /**
+     * 尝试获取 AI 并发许可
+     */
+    public boolean tryAcquireAiPermit() {
+        cleanupExpiredTasks();
+        return aiSemaphore.tryAcquire();
+    }
+
+    /**
+     * 提交异步拆解任务
+     */
+    @org.springframework.scheduling.annotation.Async
+    public void decomposeGoalAsync(String taskId, Long userId, String name, String description, Integer totalDays, String taskCount) {
+        AsyncTaskResult result = new AsyncTaskResult();
+        result.status = "PENDING";
+        result.userId = userId;
+        result.expiresAt = System.currentTimeMillis() + TASK_CACHE_TTL_MILLIS;
+        taskCache.put(taskId, result);
+
+        try {
+            GoalDecompositionDTO data = decomposeGoalDetailed(name, description, totalDays, taskCount);
+            result.data = data;
+            result.status = "COMPLETED";
+        } catch (Exception e) {
+            log.error("Async AI decomposition failed", e);
+            result.status = "FAILED";
+            result.error = e.getMessage();
+        } finally {
+            // 无论成功失败，必须释放许可
+            aiSemaphore.release();
+        }
+    }
+
+    /**
+     * 获取异步任务结果
+     */
+    public AsyncTaskResult getTaskResult(String taskId, Long userId) {
+        cleanupExpiredTasks();
+
+        AsyncTaskResult result = taskCache.get(taskId);
+        if (result == null || !userId.equals(result.userId)) {
+            return null;
+        }
+        return result;
+    }
+
+    private void cleanupExpiredTasks() {
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<String, AsyncTaskResult>> iterator = taskCache.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, AsyncTaskResult> entry = iterator.next();
+            if (entry.getValue().expiresAt <= now) {
+                iterator.remove();
+            }
+        }
     }
 
     public List<List<String>> decomposeGoal(String name, String description, Integer totalDays, String taskCount) {

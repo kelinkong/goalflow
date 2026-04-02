@@ -49,6 +49,18 @@ export function setupAuth() {
   return { token: login() };
 }
 
+function normalizeGoalList(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && Array.isArray(payload.content)) {
+    return payload.content;
+  }
+
+  return [];
+}
+
 export function getGoals(token) {
   const res = http.get(`${BASE_URL}/goals`, {
     headers: jsonHeaders(token),
@@ -59,7 +71,7 @@ export function getGoals(token) {
     logFailure('get goals', res);
     fail('setup failed: could not load goals');
   }
-  return res.json();
+  return normalizeGoalList(res.json());
 }
 
 export function getGoalDetail(token, goalId) {

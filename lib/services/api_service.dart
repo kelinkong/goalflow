@@ -252,22 +252,36 @@ class ApiService {
     }
   }
 
-  Future<GoalDecomposition> decompose(Map<String, dynamic> goalData) async {
+  Future<Map<String, dynamic>> decompose(Map<String, dynamic> goalData) async {
     final response = await _send(
       () => http.post(
         Uri.parse('$baseUrl/api/goals/decompose'),
         headers: _headers,
         body: jsonEncode(goalData),
       ),
-      action: 'AI 拆解',
-      timeout: const Duration(seconds: 90),
+      action: '提交 AI 拆解任务',
     );
 
     if (response.statusCode == 200) {
-      return GoalDecomposition.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>);
+      return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      _throwFriendlyError(response, action: 'AI 拆解');
+      _throwFriendlyError(response, action: '提交 AI 拆解任务');
+    }
+  }
+
+  Future<Map<String, dynamic>> getDecomposeStatus(String taskId) async {
+    final response = await _send(
+      () => http.get(
+        Uri.parse('$baseUrl/api/goals/decompose/status/$taskId'),
+        headers: _headers,
+      ),
+      action: '查询 AI 拆解进度',
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      _throwFriendlyError(response, action: '查询 AI 拆解进度');
     }
   }
 
