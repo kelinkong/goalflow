@@ -31,6 +31,7 @@ class SettingsScreen extends StatelessWidget {
   ) async {
     final nicknameCtrl = TextEditingController(text: state.userNickname ?? '');
     final picker = ImagePicker();
+    final originalAvatar = state.userAvatar;
     var draftAvatar = state.userAvatar;
     var isSaving = false;
 
@@ -72,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
           try {
             await state.updateProfile(
               nickname: nickname,
-              avatar: draftAvatar,
+              avatar: draftAvatar == originalAvatar ? null : draftAvatar,
             );
             if (!sheetContext.mounted) return;
             Navigator.pop(sheetContext);

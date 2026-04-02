@@ -247,7 +247,7 @@ class AppState extends ChangeNotifier {
 
       final result = await _api.updateProfile(payload);
       _userNickname = result['nickname']?.toString();
-      _userAvatar = result['avatar']?.toString();
+      _userAvatar = _api.resolveAssetUrl(result['avatar']?.toString());
       notifyListeners();
     } catch (e) {
       debugPrint('Update profile failed: $e');
@@ -763,7 +763,7 @@ class AppState extends ChangeNotifier {
     _userId = me['id']?.toString();
     _userEmail = me['email']?.toString();
     _userNickname = me['nickname']?.toString();
-    _userAvatar = me['avatar']?.toString();
+    _userAvatar = _api.resolveAssetUrl(me['avatar']?.toString());
     _userCreatedAt = me['createdAt'] != null
         ? DateTime.parse(me['createdAt'].toString())
         : null;

@@ -18,6 +18,27 @@ class ApiService {
 
   String? get token => _token;
 
+  String? resolveAssetUrl(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return null;
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    if (value.startsWith('data:image')) {
+      return value;
+    }
+
+    final baseUri = Uri.parse(baseUrl);
+    final normalizedPath = value.startsWith('/') ? value : '/$value';
+    return baseUri
+        .replace(
+          path: normalizedPath,
+          query: null,
+          fragment: null,
+        )
+        .toString();
+  }
+
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         if (_token != null) 'Authorization': 'Bearer $_token',

@@ -54,8 +54,9 @@ goalflow/
 cd ./admin_console && npm run build
 cd ./backend/goalflow-api && mvn package -DskipTests
 tar -C ./admin_console/dist -cf - . | ssh <your-server> 'tar -C ~/goalflow/www -xf -'
-ssh <your-server> 'cat > ~/goalflow/app/app.jar' < ./backend/goalflow-api/target/goalflow-api-1.0.0.jar
-ssh <your-server> 'docker restart backend'
+ssh <your-server> 'cat > ~/goalflow/app/app.jar' < ./backend/goalflow-api/target/goalflow-api-1.0.0.jar # 直接上传 jar 包
+ssh <your-server> 'docker restart backend' # 仅仅启动后端
+ssh <your-server> 'cd ~/goalflow && docker-compose down && docker-compose up -d' # 重启整个服务
 ```
 
 部署后至少验证：

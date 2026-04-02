@@ -41,17 +41,36 @@ public class UserService {
 
         if (avatar != null) {
             String trimmedAvatar = avatar.trim();
-            // 放宽限制到 5MB (Base64 编码后)
             if (trimmedAvatar.length() > 5_000_000) {
                 throw new BusinessException("头像图片数据过大", 400);
             }
             
-            // 自动移除 Data URL 前缀 (如 data:image/jpeg;base64,)
             if (trimmedAvatar.contains(",")) {
                 trimmedAvatar = trimmedAvatar.substring(trimmedAvatar.indexOf(",") + 1);
             }
             
-            user.setAvatar(trimmedAvatar.isEmpty() ? null : trimmedAvatar);
+            if (!trimmedAvatar.isEmpty()) {
+                try {
+                    // 解码 Base64
+                    byte[] imageBytes = java.util.Base64.getDecoder().decode(trimmedAvatar);
+                    // 生成文件名：avatar_用户ID.jpg (简单处理)
+                    String fileName = "avatar_" + user.getId() + "_" + System.currentTimeMillis() + ".jpg";
+                    String relativePath = "/uploads/avatars/" + fileName;
+                    
+                    // 确保目录存在 (容器内的路径)
+                    java.io.File uploadDir = new java.io.File("/app/uploads/avatars");
+                    if (!uploadDir.exists()) uploadDir.mkdirs();
+                    
+                    // 写入磁盘
+                    java.nio.file.Files.write(java.nio.file.Paths.get("/app/uploads/avatars/", fileName), imageBytes);
+                    
+                    user.setAvatar(relativePath); 
+                } catch (Exception e) {
+                    throw new BusinessException("头像保存失败: " + e.getMessage(), 500);
+                }
+            } else {
+                user.setAvatar(null);
+            }
             changed = true;
         }
 
