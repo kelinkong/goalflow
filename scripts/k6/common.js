@@ -62,20 +62,38 @@ export function getGoals(token) {
   return res.json();
 }
 
+export function getGoalDetail(token, goalId) {
+  const res = http.get(`${BASE_URL}/goals/${goalId}`, {
+    headers: jsonHeaders(token),
+    timeout: REQUEST_TIMEOUT,
+  });
+  if (res.status !== 200) {
+    logFailure(`get goal detail ${goalId}`, res);
+    fail(`setup failed: could not load goal detail for ${goalId}`);
+  }
+  return res.json();
+}
+
 export function requireGoalWithTasks(token) {
   const goals = getGoals(token);
-  const goal = goals.find(
-    (item) =>
-      Array.isArray(item.taskPlan) &&
-      item.taskPlan.length > 0 &&
-      Array.isArray(item.taskPlan[0]) &&
-      item.taskPlan[0].length > 0 &&
-      item.createdAt,
-  );
-  if (!goal) {
-    fail('setup failed: no goal with non-empty taskPlan found');
+  if (!Array.isArray(goals) || goals.length === 0) {
+    fail('setup failed: no goals found');
   }
-  return goal;
+
+  // 尝试找到一个看起来有任务的目标（即使列表没返回 taskPlan）
+  for (const item of goals) {
+    const detail = getGoalDetail(token, item.id);
+    if (
+      Array.isArray(detail.taskPlan) &&
+      detail.taskPlan.length > 0 &&
+      Array.isArray(detail.taskPlan[0]) &&
+      detail.taskPlan[0].length > 0
+    ) {
+      return detail;
+    }
+  }
+
+  fail('setup failed: no goal with non-empty taskPlan found after checking details');
 }
 
 export function formatDate(value) {

@@ -125,17 +125,12 @@ public class HabitService {
         boolean isDone = normalizeIsDone(request);
         LocalDateTime now = LocalDateTime.now();
 
-        HabitCheckin existing = habitCheckinMapper.selectOne(new LambdaQueryWrapper<HabitCheckin>()
-                .eq(HabitCheckin::getHabitId, habitId)
-                .eq(HabitCheckin::getDate, date)
-                .last("LIMIT 1"));
-
         if (!isDone) {
-            if (existing != null) {
-                habitCheckinMapper.deleteById(existing.getId());
-            }
-        } else if (existing == null) {
-            habitCheckinMapper.insert(HabitCheckin.builder()
+            habitCheckinMapper.delete(new LambdaQueryWrapper<HabitCheckin>()
+                    .eq(HabitCheckin::getHabitId, habitId)
+                    .eq(HabitCheckin::getDate, date));
+        } else {
+            habitCheckinMapper.upsert(HabitCheckin.builder()
                     .habitId(habitId)
                     .userId(user.getId())
                     .date(date)
@@ -143,11 +138,6 @@ public class HabitService {
                     .createdAt(now)
                     .updatedAt(now)
                     .build());
-        } else {
-            habitCheckinMapper.update(null, new LambdaUpdateWrapper<HabitCheckin>()
-                    .eq(HabitCheckin::getId, existing.getId())
-                    .set(HabitCheckin::getIsDone, true)
-                    .set(HabitCheckin::getUpdatedAt, now));
         }
 
         habitMapper.update(null, new LambdaUpdateWrapper<Habit>()
