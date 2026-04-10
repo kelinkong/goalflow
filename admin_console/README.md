@@ -38,8 +38,8 @@ GoalFlow 管理台前端。
 
 用户端的正式方案文档：
 
-1. [growth-system-requirements.md](./docs/growth-system-requirements.md)
-2. [growth-system-tech.md](./docs/growth-system-tech.md)
+1. [growth-system-requirements.md](../docs/growth-system-requirements.md)
+2. [growth-system-tech.md](../docs/growth-system-tech.md)
 
 管理台文档应始终服从这两份文档。
 
@@ -171,14 +171,14 @@ admin_console/
 ## 安装依赖
 
 ```bash
-cd ./admin_console
+cd admin_console
 npm install
 ```
 
 ## 启动开发环境
 
 ```bash
-cd ./admin_console
+cd admin_console
 npm run dev
 ```
 
@@ -208,7 +208,7 @@ http://127.0.0.1:8081
 ## 构建
 
 ```bash
-cd ./admin_console
+cd admin_console
 npm run build
 ```
 

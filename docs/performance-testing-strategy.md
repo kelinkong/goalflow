@@ -230,7 +230,7 @@
 推荐执行方式：
 
 ```bash
-cd .
+cd goalflow
 set -a
 source scripts/k6/.env
 set +a

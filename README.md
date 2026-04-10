@@ -94,7 +94,7 @@ GoalFlow 当前围绕三条主线收敛：
 
 ## 文档
 
-产品与技术的最新方案文档在 [docs/growth-system-requirements.md](./docs/growth-system-requirements.md) 和 [docs/growth-system-tech.md](./docs/growth-system-tech.md)。
+产品与技术的最新方案文档在 [docs/growth-system-requirements.md](docs/growth-system-requirements.md) 和 [docs/growth-system-tech.md](docs/growth-system-tech.md)。
 
 如果文档与旧代码、旧截图、旧描述存在冲突，以这两份文档为准。
 
@@ -113,7 +113,7 @@ API_BASE_URL=http://127.0.0.1:8081
 ### 2. 启动后端
 
 ```bash
-cd ./backend
+cd backend
 mvn -pl goalflow-api spring-boot:run -DskipTests
 ```
 
@@ -126,7 +126,7 @@ http://127.0.0.1:8081
 ### 3. 启动 Flutter
 
 ```bash
-cd .
+cd goalflow
 flutter pub get
 flutter run
 ```
@@ -167,12 +167,13 @@ goalflow/
 
 ## 部署
 
-常用后端部署命令：
+常用后端部署命令示例：
 
 ```bash
-cd ./backend && mvn -pl goalflow-api package -DskipTests
-ssh <your-server> 'cat > ~/goalflow/app/app.jar' < ./backend/goalflow-api/target/goalflow-api-1.0.0.jar
-ssh <your-server> 'cd ~/goalflow && docker compose restart backend'
+cd backend && mvn -pl goalflow-api package -DskipTests
+# 将生成的 jar 包上传到服务器并重启
+# scp goalflow-api/target/goalflow-api-1.0.0.jar user@host:~/goalflow/app/app.jar
+# ssh user@host 'cd ~/goalflow && docker compose restart backend'
 ```
 
 部署后至少验证：

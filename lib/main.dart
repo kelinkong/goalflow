@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2026 GoalFlow Contributors
+ * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ */
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

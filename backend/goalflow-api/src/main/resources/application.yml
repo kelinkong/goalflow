@@ -32,7 +32,7 @@ logging:
     org.apache.ibatis: WARN
 
 openai:
-  api-key: YOUR_OPENAI_API_KEY
+  api-key: ${OPENAI_API_KEY:}
   base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
   model: qwen3-max-2026-01-23
   decompose-model: ${OPENAI_DECOMPOSE_MODEL:qwen3.5-plus-2026-02-15}
@@ -40,7 +40,7 @@ openai:
   search-strategy: ${OPENAI_SEARCH_STRATEGY:turbo}
 
 jwt:
-  secret: YOUR_JWT_SECRET
+  secret: ${JWT_SECRET:YOUR_JWT_SECRET}
 
 goalflow:
   admin:

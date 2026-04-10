@@ -4,7 +4,7 @@ services:
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: REDACTED_PASSWORD
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-REDACTED_PASSWORD}
       MYSQL_DATABASE: goalflow
     volumes:
       - ./data/mysql:/var/lib/mysql
@@ -25,7 +25,9 @@ services:
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Shanghai
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/goalflow?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: REDACTED_PASSWORD
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-REDACTED_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
     command: ["java", "-jar", "app.jar"]
     depends_on:
       - mysql

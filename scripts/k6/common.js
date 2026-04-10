@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, fail } from 'k6';
 
-export const BASE_URL = (__ENV.BASE_URL || 'http://127.0.0.1:8080/api').replace(/\/$/, '');
+export const BASE_URL = (__ENV.BASE_URL || 'http://localhost:8081/api').replace(/\/$/, '');
 export const LOGIN_EMAIL = __ENV.LOGIN_EMAIL || 'test@qq.com';
 export const LOGIN_PASSWORD = __ENV.LOGIN_PASSWORD || 'REDACTED_PASSWORD';
 export const REQUEST_TIMEOUT = __ENV.REQUEST_TIMEOUT || '20s';
