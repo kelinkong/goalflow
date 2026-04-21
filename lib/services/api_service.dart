@@ -4,12 +4,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../models/goal_decomposition.dart';
 
 class ApiService {
   final String baseUrl =
       dotenv.get('API_BASE_URL', fallback: 'http://localhost:8081');
   String? _token;
+  String languageCode = 'zh';
   VoidCallback? onUnauthorized;
 
   void setToken(String token) {
@@ -41,8 +41,12 @@ class ApiService {
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
+        'Accept-Language': languageCode,
         if (_token != null) 'Authorization': 'Bearer $_token',
       };
+
+  String _t(String zh, String en) =>
+      languageCode == 'en' ? en : zh;
 
   String _parseErrorMessage(http.Response response) {
     try {
@@ -51,7 +55,10 @@ class ApiService {
         return data['message'].toString();
       }
     } catch (_) {}
-    return '请求失败 (${response.statusCode})';
+    return _t(
+      '请求失败 (${response.statusCode})',
+      'Request failed (${response.statusCode})',
+    );
   }
 
   Future<http.Response> _send(
@@ -62,13 +69,17 @@ class ApiService {
     try {
       return await request().timeout(timeout);
     } on SocketException {
-      throw Exception('网络连接失败，请检查网络后重试');
+      throw Exception(_t('网络连接失败，请检查网络后重试',
+          'Network connection failed. Check your network and try again.'));
     } on TimeoutException {
-      throw Exception('$action超时，请稍后重试');
+      throw Exception(_t('$action超时，请稍后重试',
+          '$action timed out. Please try again shortly.'));
     } on http.ClientException {
-      throw Exception('网络请求失败，请稍后重试');
+      throw Exception(
+          _t('网络请求失败，请稍后重试', 'Network request failed. Please try again shortly.'));
     } on FormatException {
-      throw Exception('服务器返回异常，请稍后重试');
+      throw Exception(_t('服务器返回异常，请稍后重试',
+          'The server returned an invalid response. Please try again shortly.'));
     }
   }
 
@@ -77,48 +88,58 @@ class ApiService {
     final status = response.statusCode;
 
     if (status == 401) {
-      if (action != '登录' && action != '注册') {
+      if (action != _t('登录', 'Sign in') && action != _t('注册', 'Sign up')) {
         onUnauthorized?.call();
       }
-      if (action == '登录') {
-        throw Exception('邮箱或密码不正确');
+      if (action == _t('登录', 'Sign in')) {
+        throw Exception(_t('邮箱或密码不正确', 'Incorrect email or password.'));
       }
-      throw Exception('登录状态已过期，请重新登录');
+      throw Exception(
+          _t('登录状态已过期，请重新登录', 'Your session has expired. Please sign in again.'));
     }
 
     if (status == 403) {
       if (rawMessage.contains('登录状态已过期')) {
-        if (action != '登录' && action != '注册') {
+        if (action != _t('登录', 'Sign in') && action != _t('注册', 'Sign up')) {
           onUnauthorized?.call();
         }
-        throw Exception('登录状态已过期，请重新登录');
+        throw Exception(
+            _t('登录状态已过期，请重新登录', 'Your session has expired. Please sign in again.'));
       }
-      if (rawMessage.isNotEmpty && rawMessage != '请求失败 ($status)') {
+      if (rawMessage.isNotEmpty &&
+          rawMessage != _t('请求失败 ($status)', 'Request failed ($status)')) {
         throw Exception(rawMessage);
       }
-      throw Exception('$action失败，当前无权限');
+      throw Exception(_t('$action失败，当前无权限', '$action failed because access is denied.'));
     }
 
     if (status == 404) {
-      throw Exception('$action失败，内容不存在或已被删除');
+      throw Exception(_t('$action失败，内容不存在或已被删除',
+          '$action failed because the content was not found or has been removed.'));
     }
 
     if (status == 408 || status == 504) {
-      throw Exception('$action超时，请稍后重试');
+      throw Exception(_t('$action超时，请稍后重试',
+          '$action timed out. Please try again shortly.'));
     }
 
     if (status >= 500) {
-      if (action == 'AI 拆解' || rawMessage.contains('AI decomposition failed')) {
-        throw Exception('AI 拆解失败，请稍后重试');
+      if (action == _t('AI 拆解', 'AI breakdown') ||
+          rawMessage.contains('AI decomposition failed')) {
+        throw Exception(
+            _t('AI 拆解失败，请稍后重试', 'AI breakdown failed. Please try again shortly.'));
       }
-      throw Exception('$action失败，服务器暂时不可用');
+      throw Exception(_t('$action失败，服务器暂时不可用',
+          '$action failed because the server is temporarily unavailable.'));
     }
 
-    if (rawMessage.isNotEmpty && rawMessage != '请求失败 ($status)') {
+    if (rawMessage.isNotEmpty &&
+        rawMessage != _t('请求失败 ($status)', 'Request failed ($status)')) {
       throw Exception(rawMessage);
     }
 
-    throw Exception('$action失败，请稍后重试');
+    throw Exception(_t('$action失败，请稍后重试',
+        '$action failed. Please try again shortly.'));
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -128,18 +149,19 @@ class ApiService {
         headers: _headers,
         body: jsonEncode({'email': email, 'password': password}),
       ),
-      action: '登录',
+      action: _t('登录', 'Sign in'),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final token = data['token']?.toString();
       if (token == null || token.isEmpty) {
-        throw Exception('登录失败：Token 缺失');
+        throw Exception(_t('登录失败：Token 缺失',
+            'Sign-in failed: missing token in response.'));
       }
       return {'token': token};
     } else {
-      _throwFriendlyError(response, action: '登录');
+      _throwFriendlyError(response, action: _t('登录', 'Sign in'));
     }
   }
 
@@ -155,7 +177,7 @@ class ApiService {
           'nickname': nickname,
         }),
       ),
-      action: '注册',
+      action: _t('注册', 'Sign up'),
     );
 
     if (response.statusCode == 200) {
@@ -166,7 +188,7 @@ class ApiService {
       }
       return {'message': response.body};
     } else {
-      _throwFriendlyError(response, action: '注册');
+      _throwFriendlyError(response, action: _t('注册', 'Sign up'));
     }
   }
 
@@ -176,12 +198,12 @@ class ApiService {
         Uri.parse('$baseUrl/api/auth/me'),
         headers: _headers,
       ),
-      action: '获取用户信息',
+      action: _t('获取用户信息', 'Load profile'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      _throwFriendlyError(response, action: '获取用户信息');
+      _throwFriendlyError(response, action: _t('获取用户信息', 'Load profile'));
     }
   }
 
@@ -192,12 +214,12 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(data),
       ),
-      action: '更新个人资料',
+      action: _t('更新个人资料', 'Update profile'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      _throwFriendlyError(response, action: '更新个人资料');
+      _throwFriendlyError(response, action: _t('更新个人资料', 'Update profile'));
     }
   }
 
@@ -209,13 +231,13 @@ class ApiService {
         Uri.parse('$baseUrl/api/goals?page=$page&size=$size'),
         headers: _headers,
       ),
-      action: '获取目标列表',
+      action: _t('获取目标列表', 'Load goals'),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      _throwFriendlyError(response, action: '获取目标列表');
+      _throwFriendlyError(response, action: _t('获取目标列表', 'Load goals'));
     }
   }
 
@@ -226,13 +248,13 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(goalData),
       ),
-      action: '创建目标',
+      action: _t('创建目标', 'Create goal'),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      _throwFriendlyError(response, action: '创建目标');
+      _throwFriendlyError(response, action: _t('创建目标', 'Create goal'));
     }
   }
 
@@ -242,13 +264,14 @@ class ApiService {
         Uri.parse('$baseUrl/api/goals/$id'),
         headers: _headers,
       ),
-      action: '获取目标详情',
+      action: _t('获取目标详情', 'Load goal details'),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      _throwFriendlyError(response, action: '获取目标详情');
+      _throwFriendlyError(
+          response, action: _t('获取目标详情', 'Load goal details'));
     }
   }
 
@@ -259,13 +282,14 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(goalData),
       ),
-      action: '提交 AI 拆解任务',
+      action: _t('提交 AI 拆解任务', 'Submit AI breakdown'),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      _throwFriendlyError(response, action: '提交 AI 拆解任务');
+      _throwFriendlyError(response,
+          action: _t('提交 AI 拆解任务', 'Submit AI breakdown'));
     }
   }
 
@@ -275,13 +299,14 @@ class ApiService {
         Uri.parse('$baseUrl/api/goals/decompose/status/$taskId'),
         headers: _headers,
       ),
-      action: '查询 AI 拆解进度',
+      action: _t('查询 AI 拆解进度', 'Check AI breakdown progress'),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      _throwFriendlyError(response, action: '查询 AI 拆解进度');
+      _throwFriendlyError(response,
+          action: _t('查询 AI 拆解进度', 'Check AI breakdown progress'));
     }
   }
 
@@ -293,12 +318,12 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(goalData),
       ),
-      action: '更新目标',
+      action: _t('更新目标', 'Update goal'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      _throwFriendlyError(response, action: '更新目标');
+      _throwFriendlyError(response, action: _t('更新目标', 'Update goal'));
     }
   }
 
@@ -308,10 +333,10 @@ class ApiService {
         Uri.parse('$baseUrl/api/goals/$id'),
         headers: _headers,
       ),
-      action: '删除目标',
+      action: _t('删除目标', 'Delete goal'),
     );
     if (response.statusCode != 204) {
-      _throwFriendlyError(response, action: '删除目标');
+      _throwFriendlyError(response, action: _t('删除目标', 'Delete goal'));
     }
   }
 
@@ -322,10 +347,10 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(checkInData),
       ),
-      action: '完成任务',
+      action: _t('完成任务', 'Complete task'),
     );
     if (response.statusCode != 200) {
-      _throwFriendlyError(response, action: '完成任务');
+      _throwFriendlyError(response, action: _t('完成任务', 'Complete task'));
     }
   }
 
@@ -336,10 +361,10 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(deferData),
       ),
-      action: '顺延任务',
+      action: _t('顺延任务', 'Defer task'),
     );
     if (response.statusCode != 200) {
-      _throwFriendlyError(response, action: '顺延任务');
+      _throwFriendlyError(response, action: _t('顺延任务', 'Defer task'));
     }
   }
 
@@ -349,13 +374,13 @@ class ApiService {
         Uri.parse('$baseUrl/api/goals/$goalId/timeline'),
         headers: _headers,
       ),
-      action: '获取任务进度',
+      action: _t('获取任务进度', 'Load timeline'),
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       return data.cast<Map<String, dynamic>>();
     } else {
-      _throwFriendlyError(response, action: '获取任务进度');
+      _throwFriendlyError(response, action: _t('获取任务进度', 'Load timeline'));
     }
   }
 
@@ -365,7 +390,7 @@ class ApiService {
         Uri.parse('$baseUrl/api/daily-reviews/$date'),
         headers: _headers,
       ),
-      action: '获取每日复盘',
+      action: _t('获取每日复盘', 'Load daily review'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
@@ -373,7 +398,7 @@ class ApiService {
     if (response.statusCode == 404) {
       return null;
     }
-    _throwFriendlyError(response, action: '获取每日复盘');
+    _throwFriendlyError(response, action: _t('获取每日复盘', 'Load daily review'));
   }
 
   Future<Map<String, dynamic>> upsertDailyReview(
@@ -386,12 +411,12 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(payload),
       ),
-      action: '保存每日复盘',
+      action: _t('保存每日复盘', 'Save daily review'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
-    _throwFriendlyError(response, action: '保存每日复盘');
+    _throwFriendlyError(response, action: _t('保存每日复盘', 'Save daily review'));
   }
 
   Future<List<String>> getDailyReviewCalendar(String month) async {
@@ -400,14 +425,15 @@ class ApiService {
         Uri.parse('$baseUrl/api/daily-reviews/calendar?month=$month'),
         headers: _headers,
       ),
-      action: '获取复盘月历',
+      action: _t('获取复盘月历', 'Load review calendar'),
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final dates = (data['reviewedDates'] as List? ?? const []);
       return dates.map((item) => item.toString()).toList(growable: false);
     }
-    _throwFriendlyError(response, action: '获取复盘月历');
+    _throwFriendlyError(
+        response, action: _t('获取复盘月历', 'Load review calendar'));
   }
 
   Future<List<Map<String, dynamic>>> getHabits() async {
@@ -416,13 +442,13 @@ class ApiService {
         Uri.parse('$baseUrl/api/habits'),
         headers: _headers,
       ),
-      action: '获取习惯列表',
+      action: _t('获取习惯列表', 'Load habits'),
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       return data.cast<Map<String, dynamic>>();
     }
-    _throwFriendlyError(response, action: '获取习惯列表');
+    _throwFriendlyError(response, action: _t('获取习惯列表', 'Load habits'));
   }
 
   Future<Map<String, dynamic>> createHabit(Map<String, dynamic> payload) async {
@@ -432,12 +458,12 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(payload),
       ),
-      action: '创建习惯',
+      action: _t('创建习惯', 'Create habit'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
-    _throwFriendlyError(response, action: '创建习惯');
+    _throwFriendlyError(response, action: _t('创建习惯', 'Create habit'));
   }
 
   Future<Map<String, dynamic>> updateHabit(
@@ -450,12 +476,12 @@ class ApiService {
         headers: _headers,
         body: jsonEncode(payload),
       ),
-      action: '更新习惯',
+      action: _t('更新习惯', 'Update habit'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
-    _throwFriendlyError(response, action: '更新习惯');
+    _throwFriendlyError(response, action: _t('更新习惯', 'Update habit'));
   }
 
   Future<void> deleteHabit(String id) async {
@@ -464,10 +490,10 @@ class ApiService {
         Uri.parse('$baseUrl/api/habits/$id'),
         headers: _headers,
       ),
-      action: '删除习惯',
+      action: _t('删除习惯', 'Delete habit'),
     );
     if (response.statusCode != 204) {
-      _throwFriendlyError(response, action: '删除习惯');
+      _throwFriendlyError(response, action: _t('删除习惯', 'Delete habit'));
     }
   }
 
@@ -482,10 +508,17 @@ class ApiService {
         headers: _headers,
         body: jsonEncode({'isDone': isDone}),
       ),
-      action: isDone ? '习惯打卡' : '取消习惯打卡',
+      action: isDone
+          ? _t('习惯打卡', 'Check in habit')
+          : _t('取消习惯打卡', 'Undo habit check-in'),
     );
     if (response.statusCode != 200) {
-      _throwFriendlyError(response, action: isDone ? '习惯打卡' : '取消习惯打卡');
+      _throwFriendlyError(
+        response,
+        action: isDone
+            ? _t('习惯打卡', 'Check in habit')
+            : _t('取消习惯打卡', 'Undo habit check-in'),
+      );
     }
   }
 
@@ -495,7 +528,7 @@ class ApiService {
         Uri.parse('$baseUrl/api/habits/checkins?month=$month'),
         headers: _headers,
       ),
-      action: '获取习惯月历',
+      action: _t('获取习惯月历', 'Load habit calendar'),
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -504,7 +537,8 @@ class ApiService {
           .map((item) => (item as Map).cast<String, dynamic>())
           .toList();
     }
-    _throwFriendlyError(response, action: '获取习惯月历');
+    _throwFriendlyError(
+        response, action: _t('获取习惯月历', 'Load habit calendar'));
   }
 
   Future<Map<String, dynamic>> exportAccountData() async {
@@ -513,12 +547,12 @@ class ApiService {
         Uri.parse('$baseUrl/api/account/export'),
         headers: _headers,
       ),
-      action: '导出数据',
+      action: _t('导出数据', 'Export data'),
     );
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
-    _throwFriendlyError(response, action: '导出数据');
+    _throwFriendlyError(response, action: _t('导出数据', 'Export data'));
   }
 
   Future<void> clearHistory() async {
@@ -527,10 +561,10 @@ class ApiService {
         Uri.parse('$baseUrl/api/account/history'),
         headers: _headers,
       ),
-      action: '清空历史',
+      action: _t('清空历史', 'Clear history'),
     );
     if (response.statusCode != 204) {
-      _throwFriendlyError(response, action: '清空历史');
+      _throwFriendlyError(response, action: _t('清空历史', 'Clear history'));
     }
   }
 }

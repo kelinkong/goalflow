@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_i18n.dart';
 import '../services/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -35,7 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _nicknameCtrl.text,
       );
       if (mounted) {
-        showToast(context, '注册成功，请登录');
+        showToast(context, context.tr('注册成功，请登录', 'Account created. Please sign in.'));
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
       }
     } catch (e) {
@@ -67,16 +68,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                      GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Row(children: const [
-                        Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
+                      child: Row(children: [
+                        const Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
                         SizedBox(width: 4),
-                        Text('返回', style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                        Text(
+                          context.tr('返回', 'Back'),
+                          style: const TextStyle(fontSize: 14, color: AppColors.sub),
+                        ),
                       ]),
                     ),
                     const SizedBox(height: 32),
-                    const Text('创建新账号', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.text)),
+                    Text(
+                      context.tr('创建新账号', 'Create account'),
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.text),
+                    ),
                     const SizedBox(height: 6),
-                    const Text('开启你的目标之旅', style: TextStyle(fontSize: 13, color: AppColors.sub)),
+                    Text(
+                      context.tr('开启你的目标之旅', 'Start your goal journey.'),
+                      style: const TextStyle(fontSize: 13, color: AppColors.sub),
+                    ),
                     const SizedBox(height: 32),
 
                     if (_error != null) ...[
@@ -92,31 +102,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
 
-                    const SectionLabel('昵称'),
-                    FormInput(controller: _nicknameCtrl, hintText: '请输入昵称'),
+                    SectionLabel(context.tr('昵称', 'Nickname')),
+                    FormInput(controller: _nicknameCtrl, hintText: context.tr('请输入昵称', 'Enter your nickname')),
                     const SizedBox(height: 16),
 
-                    const SectionLabel('邮箱'),
-                    FormInput(controller: _emailCtrl, hintText: '请输入邮箱', keyboardType: TextInputType.emailAddress),
+                    SectionLabel(context.tr('邮箱', 'Email')),
+                    FormInput(controller: _emailCtrl, hintText: context.tr('请输入邮箱', 'Enter your email'), keyboardType: TextInputType.emailAddress),
                     const SizedBox(height: 16),
 
-                    const SectionLabel('密码'),
-                    FormInput(controller: _passwordCtrl, hintText: '请输入密码', obscureText: true),
+                    SectionLabel(context.tr('密码', 'Password')),
+                    FormInput(controller: _passwordCtrl, hintText: context.tr('请输入密码', 'Enter your password'), obscureText: true),
                     const SizedBox(height: 24),
 
                     AccentButton(
-                      label: '注册',
+                      label: context.tr('注册', 'Sign up'),
                       onTap: _loading ? null : _register,
                       loading: _loading,
                     ),
                      const SizedBox(height: 24),
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Text('已有账号？', style: AppTextStyles.caption),
+                        Text(context.tr('已有账号？', 'Already have an account?'), style: AppTextStyles.caption),
                         GestureDetector(
                           onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                          child: const Text(
-                            '立即登录',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
+                          child: Text(
+                            context.tr('立即登录', 'Sign in'),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
                           ),
                         ),
                       ]),

@@ -2,11 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for TextInputFormatter
+import '../l10n/app_i18n.dart';
 import '../theme.dart';
 
 String userErrorMessage(Object error) {
   final raw = error.toString().replaceFirst('Exception: ', '').trim();
-  if (raw.isEmpty) return '操作失败，请稍后重试';
+  if (raw.isEmpty) {
+    return AppI18n.tr(
+      zh: '操作失败，请稍后重试',
+      en: 'Something went wrong. Please try again shortly.',
+    );
+  }
   return raw;
 }
 
@@ -316,9 +322,9 @@ class _TaskCheckTileState extends State<TaskCheckTile> {
                       color: AppColors.pill,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text('补卡', style: AppTextStyles.caption),
+                    child: Text(context.tr('补卡', 'Make-up'), style: AppTextStyles.caption),
                   ),
-                if (widget.deferred) Text('明日', style: AppTextStyles.caption),
+                if (widget.deferred) Text(context.tr('明日', 'Tomorrow'), style: AppTextStyles.caption),
                 // Defer button (only for undone, non-deferred tasks)
                 if (!widget.done &&
                     !widget.deferred &&
@@ -343,7 +349,7 @@ class _TaskCheckTileState extends State<TaskCheckTile> {
                               ),
                             )
                           : Text(
-                              '顺延',
+                              context.tr('顺延', 'Defer'),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.sub,
@@ -503,17 +509,16 @@ class StatusBadge extends StatelessWidget {
   final String status;
   const StatusBadge(this.status, {super.key});
 
-  static const _labels = {
-    'active': '进行中',
-    'paused': '已暂停',
-    'done': '已完成',
-    'completed': '已完成',
-    'terminated': '已终止',
-  };
-
   @override
   Widget build(BuildContext context) {
     final isActive = status == 'active';
+    final labels = {
+      'active': context.tr('进行中', 'Active'),
+      'paused': context.tr('已暂停', 'Paused'),
+      'done': context.tr('已完成', 'Done'),
+      'completed': context.tr('已完成', 'Done'),
+      'terminated': context.tr('已终止', 'Ended'),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
       decoration: BoxDecoration(
@@ -521,7 +526,7 @@ class StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        _labels[status] ?? status,
+        labels[status] ?? status,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
+import '../l10n/app_i18n.dart';
 import '../models/goal_decomposition.dart';
 import '../theme.dart';
 import '../models/goal.dart';
@@ -46,13 +47,13 @@ class _NewGoalScreenState extends State<NewGoalScreen>
     '🔬'
   ];
   static const _dayOptions = [7, 14, 30, 60, 90];
-  static const _taskCountOptions = [
-    ('少', '1～2 个/天'),
-    ('中', '2～5 个/天'),
-    ('多', '6～8 个/天'),
-  ];
-
   bool get _isEditing => widget.initialGoal != null;
+
+  List<(String, String)> _taskCountOptions(BuildContext context) => [
+        (context.tr('少', 'Light'), context.tr('1～2 个/天', '1-2 / day')),
+        (context.tr('中', 'Medium'), context.tr('2～5 个/天', '2-5 / day')),
+        (context.tr('多', 'Heavy'), context.tr('6～8 个/天', '6-8 / day')),
+      ];
 
   @override
   void dispose() {
@@ -93,11 +94,16 @@ class _NewGoalScreenState extends State<NewGoalScreen>
       _step = 'loading';
       _error = null;
     });
-    _addLog('开始调用 AI');
-    _addLog('目标：${_nameCtrl.text.trim()} / $_totalDays天');
+    final taskCountOptions = _taskCountOptions(context);
+    _addLog(context.tr('开始调用 AI', 'Calling AI'));
+    _addLog(context.tr('目标：${_nameCtrl.text.trim()} / $_totalDays天',
+        'Goal: ${_nameCtrl.text.trim()} / $_totalDays days'));
     final desc = _descCtrl.text.trim();
-    _addLog(desc.isEmpty ? '当前基础：<空>' : '当前基础：$desc');
-    _addLog('每日任务数量：${_taskCountOptions[_taskCountIndex].$1}');
+    _addLog(desc.isEmpty
+        ? context.tr('当前基础：<空>', 'Current level: <empty>')
+        : context.tr('当前基础：$desc', 'Current level: $desc'));
+    _addLog(context.tr('每日任务数量：${taskCountOptions[_taskCountIndex].$1}',
+        'Daily task load: ${taskCountOptions[_taskCountIndex].$1}'));
     try {
       final goalPreview = Goal(
         id: '',
@@ -110,15 +116,16 @@ class _NewGoalScreenState extends State<NewGoalScreen>
         taskPlan: [],
       );
       final result = await context.read<AppState>().decompose(goalPreview);
-      _addLog(
-          'AI 返回成功：${result.taskPlan.length} 天计划 / ${result.phases.length} 个阶段');
+      _addLog(context.tr(
+          'AI 返回成功：${result.taskPlan.length} 天计划 / ${result.phases.length} 个阶段',
+          'AI returned ${result.taskPlan.length} planned days / ${result.phases.length} phases'));
       setState(() {
         _aiPlan = result.taskPlan;
         _phases = result.phases;
         _step = 'preview';
       });
     } catch (e) {
-      _addLog('AI 失败：${e.toString()}');
+      _addLog(context.tr('AI 失败：${e.toString()}', 'AI failed: ${e.toString()}'));
       setState(() {
         _error = userErrorMessage(e);
         _step = 'form';
@@ -137,7 +144,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
       createdAt: widget.initialGoal?.createdAt ?? DateTime.now(),
       taskTemplates: _aiPlan.isNotEmpty ? _aiPlan.first : const [],
       taskPlan: _aiPlan,
-      taskCount: _taskCountOptions[_taskCountIndex].$1,
+      taskCount: _taskCountOptions(context)[_taskCountIndex].$1,
       constraints: const [],
     );
     final appState = context.read<AppState>();
@@ -147,7 +154,9 @@ class _NewGoalScreenState extends State<NewGoalScreen>
       await appState.addGoal(goal);
     }
     if (!mounted) return;
-    showToast(context, _isEditing ? '目标已更新' : '目标已创建 🎉');
+    showToast(context, _isEditing
+        ? context.tr('目标已更新', 'Goal updated')
+        : context.tr('目标已创建 🎉', 'Goal created 🎉'));
     Navigator.pop(context);
   }
 
@@ -157,19 +166,19 @@ class _NewGoalScreenState extends State<NewGoalScreen>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('编辑任务'),
+        title: Text(context.tr('编辑任务', 'Edit task')),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: '输入任务内容',
+          decoration: InputDecoration(
+            hintText: context.tr('输入任务内容', 'Enter task content'),
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('取消')),
+              onPressed: () => Navigator.pop(context), child: Text(context.tr('取消', 'Cancel'))),
           TextButton(
             onPressed: () {
               final value = ctrl.text.trim();
@@ -177,7 +186,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
               setState(() => _aiPlan[dayIndex][taskIndex] = value);
               Navigator.pop(context);
             },
-            child: const Text('保存'),
+            child: Text(context.tr('保存', 'Save')),
           ),
         ],
       ),
@@ -191,19 +200,19 @@ class _NewGoalScreenState extends State<NewGoalScreen>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('新增任务'),
+        title: Text(context.tr('新增任务', 'Add task')),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: '输入新的任务内容',
+          decoration: InputDecoration(
+            hintText: context.tr('输入新的任务内容', 'Enter a new task'),
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('取消')),
+              onPressed: () => Navigator.pop(context), child: Text(context.tr('取消', 'Cancel'))),
           TextButton(
             onPressed: () {
               final value = ctrl.text.trim();
@@ -211,7 +220,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
               setState(() => _aiPlan[dayIndex].add(value));
               Navigator.pop(context);
             },
-            child: const Text('添加'),
+            child: Text(context.tr('添加', 'Add')),
           ),
         ],
       ),
@@ -261,7 +270,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                     borderRadius: BorderRadius.circular(18)),
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              child: Text(_isEditing ? '重新生成' : '重新生成',
+              child: Text(context.tr('重新生成', 'Regenerate'),
                   style: const TextStyle(
                       color: AppColors.sub, fontWeight: FontWeight.w500)),
             ),
@@ -289,7 +298,9 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                       ),
                     )
                   : Text(
-                      _isEditing ? '保存修改' : '确认创建目标',
+                      _isEditing
+                          ? context.tr('保存修改', 'Save changes')
+                          : context.tr('确认创建目标', 'Create goal'),
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w700),
                     ),
@@ -352,6 +363,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
     final valid = _nameCtrl.text.trim().isNotEmpty;
     final state = context.watch<AppState>();
     final isCreating = state.isActionPending('goal:create');
+    final taskCountOptions = _taskCountOptions(context);
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -363,23 +375,25 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Row(children: [
+                child: Row(children: [
                   Icon(Icons.arrow_back_ios_new,
                       size: 14, color: AppColors.sub),
                   SizedBox(width: 4),
-                  Text('返回',
-                      style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                  Text(context.tr('返回', 'Back'),
+                      style: const TextStyle(fontSize: 14, color: AppColors.sub)),
                 ]),
               ),
               const SizedBox(height: 18),
-              Text(_isEditing ? '编辑目标' : '新建目标',
+              Text(_isEditing ? context.tr('编辑目标', 'Edit goal') : context.tr('新建目标', 'New goal'),
                   style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       color: AppColors.text,
                       letterSpacing: -0.5)),
               const SizedBox(height: 4),
-              Text(_isEditing ? '调整目标信息，必要时重新生成任务' : '告诉 AI 你的目标和当前基础，它来拆解每日任务',
+              Text(_isEditing
+                      ? context.tr('调整目标信息，必要时重新生成任务', 'Adjust the goal details and regenerate tasks when needed.')
+                      : context.tr('告诉 AI 你的目标和当前基础，它来拆解每日任务', 'Tell AI your goal and your current level, and it will break it into daily tasks.'),
                   style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.sub,
@@ -417,7 +431,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('AI 调用日志',
+                    Text(context.tr('AI 调用日志', 'AI logs'),
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -435,7 +449,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 ),
               ),
             ],
-            const SectionLabel('选择图标'),
+            SectionLabel(context.tr('选择图标', 'Choose an icon')),
             Container(
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 16),
@@ -478,7 +492,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                     .toList(),
               ),
             ),
-            const SectionLabel('目标名称 *'),
+            SectionLabel(context.tr('目标名称 *', 'Goal name *')),
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
@@ -498,8 +512,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 inputFormatters: [
                   LengthLimitingTextInputFormatter(15),
                 ],
-                decoration: const InputDecoration(
-                  hintText: '例如：备考英语四级',
+                decoration: InputDecoration(
+                  hintText: context.tr('例如：备考英语四级', 'Example: Pass CET-4'),
                   hintStyle: TextStyle(color: AppColors.sub),
                   border: InputBorder.none,
                   contentPadding:
@@ -508,7 +522,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 style: const TextStyle(fontSize: 15, color: AppColors.text),
               ),
             ),
-            const SectionLabel('每日任务数量'),
+            SectionLabel(context.tr('每日任务数量', 'Daily task load')),
             Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
@@ -525,21 +539,21 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 children: [
                   _buildChoiceRow<int>(
                     options: List.generate(
-                      _taskCountOptions.length,
-                      (i) => (i, _taskCountOptions[i].$1),
+                      taskCountOptions.length,
+                      (i) => (i, taskCountOptions[i].$1),
                     ),
                     value: _taskCountIndex,
                     onSelect: (v) => setState(() => _taskCountIndex = v),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _taskCountOptions[_taskCountIndex].$2,
+                    taskCountOptions[_taskCountIndex].$2,
                     style: const TextStyle(fontSize: 12, color: AppColors.sub),
                   ),
                 ],
               ),
             ),
-            const SectionLabel('当前基础（可选）'),
+            SectionLabel(context.tr('当前基础（可选）', 'Current level (optional)')),
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
@@ -554,8 +568,11 @@ class _NewGoalScreenState extends State<NewGoalScreen>
               child: TextField(
                 controller: _descCtrl,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: '例如：刚开始接触 / 已坚持一周 / 目前每天只能投入 15 分钟…',
+                decoration: InputDecoration(
+                  hintText: context.tr(
+                    '例如：刚开始接触 / 已坚持一周 / 目前每天只能投入 15 分钟…',
+                    'Example: Just started / Already kept it up for a week / Can only spend 15 minutes a day for now...',
+                  ),
                   hintStyle: TextStyle(color: AppColors.sub, fontSize: 14),
                   border: InputBorder.none,
                   contentPadding:
@@ -565,7 +582,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                     fontSize: 14, color: AppColors.text, height: 1.6),
               ),
             ),
-            const SectionLabel('挑战周期'),
+            SectionLabel(context.tr('挑战周期', 'Challenge length')),
             Row(
               children: _dayOptions
                   .map((d) => Expanded(
@@ -589,7 +606,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                             ),
                             child: Center(
                               child: Text(
-                                '$d天',
+                                context.tr('$d天', '$d days'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -606,7 +623,9 @@ class _NewGoalScreenState extends State<NewGoalScreen>
             ),
             const SizedBox(height: 28),
             AccentButton(
-              label: _isEditing ? '重新生成任务计划' : '让 AI 拆解每日任务',
+              label: _isEditing
+                  ? context.tr('重新生成任务计划', 'Regenerate task plan')
+                  : context.tr('让 AI 拆解每日任务', 'Let AI create daily tasks'),
               onTap: valid && !isCreating ? _callAI : null,
               loading: false,
               leading: const Text('✦', style: TextStyle(color: Colors.white)),
@@ -665,13 +684,14 @@ class _NewGoalScreenState extends State<NewGoalScreen>
               ],
             ),
             const SizedBox(height: 28),
-            const Text('AI 拆解中…',
+            Text(context.tr('AI 拆解中…', 'AI is breaking it down...'),
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: AppColors.text)),
             const SizedBox(height: 10),
-            Text('正在为「${_nameCtrl.text}」\n生成 $_totalDays 天每日任务计划',
+            Text(context.tr('正在为「${_nameCtrl.text}」\n生成 $_totalDays 天每日任务计划',
+                    'Generating a $_totalDays-day task plan\nfor "${_nameCtrl.text}"'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontSize: 14, color: AppColors.sub, height: 1.7)),
@@ -688,7 +708,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('AI 调用日志',
+                    Text(context.tr('AI 调用日志', 'AI logs'),
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -707,7 +727,11 @@ class _NewGoalScreenState extends State<NewGoalScreen>
               ),
             ],
             const SizedBox(height: 36),
-            ...['分析目标内容', '拆解每日任务', '生成执行计划'].asMap().entries.map(
+            ...[
+              context.tr('分析目标内容', 'Analyzing your goal'),
+              context.tr('拆解每日任务', 'Breaking down daily tasks'),
+              context.tr('生成执行计划', 'Generating execution plan'),
+            ].asMap().entries.map(
                   (e) => Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(
@@ -745,9 +769,12 @@ class _NewGoalScreenState extends State<NewGoalScreen>
   // ── Preview ───────────────────────────────────────────────────
   Widget _buildPreview() {
     final filters = <String>[];
-    filters.add('任务数：${_taskCountOptions[_taskCountIndex].$1}');
+    final taskCountOptions = _taskCountOptions(context);
+    filters.add(context.tr('任务数：${taskCountOptions[_taskCountIndex].$1}',
+        'Task load: ${taskCountOptions[_taskCountIndex].$1}'));
     if (_descCtrl.text.trim().isNotEmpty) {
-      filters.add('基础：${_descCtrl.text.trim()}');
+      filters.add(context.tr('基础：${_descCtrl.text.trim()}',
+          'Level: ${_descCtrl.text.trim()}'));
     }
     return CustomScrollView(
       slivers: [
@@ -760,12 +787,12 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               GestureDetector(
                 onTap: () => setState(() => _step = 'form'),
-                child: const Row(children: [
+                child: Row(children: [
                   Icon(Icons.arrow_back_ios_new,
                       size: 14, color: AppColors.sub),
                   SizedBox(width: 4),
-                  Text('重新填写',
-                      style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                  Text(context.tr('重新填写', 'Back to form'),
+                      style: const TextStyle(fontSize: 14, color: AppColors.sub)),
                 ]),
               ),
               const SizedBox(height: 18),
@@ -788,7 +815,8 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                           fontWeight: FontWeight.w900,
                           color: AppColors.text)),
                   const SizedBox(height: 3),
-                  Text('$_totalDays 天挑战', style: AppTextStyles.caption),
+                  Text(context.tr('$_totalDays 天挑战', '$_totalDays-day challenge'),
+                      style: AppTextStyles.caption),
                 ]),
               ]),
               const SizedBox(height: 14),
@@ -802,7 +830,9 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                   const Text('✦',
                       style: TextStyle(fontSize: 12, color: AppColors.accent)),
                   const SizedBox(width: 6),
-                  Text('${_isEditing ? '当前' : 'AI 已生成'} ${_aiPlan.length} 天计划',
+                  Text(context.tr(
+                      '${_isEditing ? '当前' : 'AI 已生成'} ${_aiPlan.length} 天计划',
+                      '${_isEditing ? 'Current' : 'AI generated'} ${_aiPlan.length} planned days'),
                       style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -837,9 +867,9 @@ class _NewGoalScreenState extends State<NewGoalScreen>
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
           sliver: SliverList(
               delegate: SliverChildListDelegate([
-            const SectionLabel('任务计划'),
+            SectionLabel(context.tr('任务计划', 'Task plan')),
             if (_phases.isNotEmpty) ...[
-              const SectionLabel('阶段计划'),
+              SectionLabel(context.tr('阶段计划', 'Phases')),
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -888,7 +918,10 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${phase.title} · 第 ${phase.startDay}-${phase.endDay} 天',
+                                  context.tr(
+                                    '${phase.title} · 第 ${phase.startDay}-${phase.endDay} 天',
+                                    '${phase.title} · Days ${phase.startDay}-${phase.endDay}',
+                                  ),
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
@@ -912,7 +945,7 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                 ),
               ),
             ],
-            const SectionLabel('每日任务'),
+            SectionLabel(context.tr('每日任务', 'Daily tasks')),
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
@@ -948,13 +981,13 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Text('第 $dayNum 天',
+                            Text(context.tr('第 $dayNum 天', 'Day $dayNum'),
                                 style: const TextStyle(
                                     fontSize: 13, color: AppColors.sub)),
                             const Spacer(),
                             TextButton(
                               onPressed: () => _addTask(e.key),
-                              child: const Text('添加任务'),
+                              child: Text(context.tr('添加任务', 'Add task')),
                             ),
                           ],
                         ),
@@ -1026,7 +1059,9 @@ class _NewGoalScreenState extends State<NewGoalScreen>
                         borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: Text('计划会覆盖 $_totalDays 天，并随天数循序渐进',
+                    child: Text(context.tr(
+                        '计划会覆盖 $_totalDays 天，并随天数循序渐进',
+                        'The plan covers $_totalDays days and ramps up gradually.'),
                         style: const TextStyle(
                             fontSize: 13, color: AppColors.sub, height: 1.65))),
               ]),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_i18n.dart';
 import '../models/habit.dart';
 import '../services/app_state.dart';
 import '../theme.dart';
@@ -46,10 +47,10 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('习惯', style: AppTextStyles.headline),
+                          Text(context.tr('习惯', 'Habits'), style: AppTextStyles.headline),
                           const SizedBox(height: 4),
                           Text(
-                            '你想成为什么样的人？',
+                            context.tr('你想成为什么样的人？', 'Who are you becoming?'),
                             style: AppTextStyles.caption.copyWith(
                                 fontStyle: FontStyle.italic, fontSize: 14),
                           ),
@@ -124,7 +125,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     try {
       await context.read<AppState>().deleteHabit(habit.id);
       if (!context.mounted) return;
-      showToast(context, '已删除习惯');
+      showToast(context, context.tr('已删除习惯', 'Habit deleted.'));
     } catch (e) {
       if (!context.mounted) return;
       showToast(context, userErrorMessage(e));
@@ -165,11 +166,11 @@ class _HabitSummaryCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _MiniHabitStat(label: '今日完成', value: '$done'),
+          _MiniHabitStat(label: context.tr('今日完成', 'Done today'), value: '$done'),
           const SizedBox(width: 10),
-          _MiniHabitStat(label: '习惯总数', value: '$total'),
+          _MiniHabitStat(label: context.tr('习惯总数', 'Total habits'), value: '$total'),
           const SizedBox(width: 10),
-          _MiniHabitStat(label: '最长连续', value: '${bestStreak}天'),
+          _MiniHabitStat(label: context.tr('最长连续', 'Best streak'), value: context.tr('${bestStreak}天', '${bestStreak}d')),
         ],
       ),
     );
@@ -251,7 +252,9 @@ class _HabitCard extends StatelessWidget {
                       if (!context.mounted) return;
                       showToast(
                         context,
-                        habit.todayDone ? '已取消今天的记录' : '已经为今天留下一次记录',
+                        habit.todayDone
+                            ? context.tr('已取消今天的记录', 'Today\'s check-in removed.')
+                            : context.tr('已经为今天留下一次记录', 'Logged once for today.'),
                       );
                     } catch (e) {
                       if (!context.mounted) return;
@@ -295,7 +298,8 @@ class _HabitCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         habit.category == null || habit.category!.isEmpty
-                            ? '把想长期保留的行动，慢慢放进日常里'
+                            ? context.tr('把想长期保留的行动，慢慢放进日常里',
+                                'Bring the actions you want to keep into daily life.')
                             : habit.category!,
                         style: AppTextStyles.caption.copyWith(height: 1.4),
                       ),
@@ -311,7 +315,7 @@ class _HabitCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${habit.streak}天连续',
+                    context.tr('${habit.streak}天连续', '${habit.streak} day streak'),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -334,7 +338,9 @@ class _HabitCard extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  habit.todayDone ? '恭喜你完成 🎉' : '今天还没有留下记录',
+                  habit.todayDone
+                      ? context.tr('恭喜你完成 🎉', 'Nice work 🎉')
+                      : context.tr('今天还没有留下记录', 'No record yet today'),
                   style: AppTextStyles.caption.copyWith(
                     color: habit.todayDone ? AppColors.success : AppColors.sub,
                   ),
@@ -342,11 +348,11 @@ class _HabitCard extends StatelessWidget {
                 const Spacer(),
                 TextButton(
                   onPressed: onEdit,
-                  child: const Text('编辑'),
+                  child: Text(context.tr('编辑', 'Edit')),
                 ),
                 TextButton(
                   onPressed: onDelete,
-                  child: const Text('删除'),
+                  child: Text(context.tr('删除', 'Delete')),
                 ),
               ],
             ),
@@ -390,7 +396,7 @@ class _HabitEditorSheetState extends State<_HabitEditorSheet> {
     final name = _nameCtrl.text.trim();
     final category = _categoryCtrl.text.trim();
     if (name.isEmpty) {
-      showToast(context, '习惯名称不能为空');
+      showToast(context, context.tr('习惯名称不能为空', 'Habit name cannot be empty.'));
       return;
     }
     try {
@@ -406,7 +412,9 @@ class _HabitEditorSheetState extends State<_HabitEditorSheet> {
       }
       if (!mounted) return;
       Navigator.pop(context);
-      showToast(context, _isEditing ? '已保存习惯' : '已创建习惯');
+      showToast(context, _isEditing
+          ? context.tr('已保存习惯', 'Habit saved.')
+          : context.tr('已创建习惯', 'Habit created.'));
     } catch (e) {
       if (!mounted) return;
       showToast(context, userErrorMessage(e));
@@ -440,18 +448,18 @@ class _HabitEditorSheetState extends State<_HabitEditorSheet> {
             ),
             const SizedBox(height: 18),
             Text(
-              _isEditing ? '编辑习惯' : '新建习惯',
+              _isEditing ? context.tr('编辑习惯', 'Edit habit') : context.tr('新建习惯', 'New habit'),
               style: AppTextStyles.headline.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 18),
-            const SectionLabel('名称'),
-            FormInput(controller: _nameCtrl, hintText: '比如：每天阅读 20 分钟'),
+            SectionLabel(context.tr('名称', 'Name')),
+            FormInput(controller: _nameCtrl, hintText: context.tr('比如：每天阅读 20 分钟', 'Example: Read for 20 minutes')),
             const SizedBox(height: 14),
-            const SectionLabel('分类'),
-            FormInput(controller: _categoryCtrl, hintText: '比如：健康 / 学习 / 社交'),
+            SectionLabel(context.tr('分类', 'Category')),
+            FormInput(controller: _categoryCtrl, hintText: context.tr('比如：健康 / 学习 / 社交', 'Example: Health / Learning / Social')),
             const SizedBox(height: 20),
             AccentButton(
-              label: _isEditing ? '保存习惯' : '创建习惯',
+              label: _isEditing ? context.tr('保存习惯', 'Save habit') : context.tr('创建习惯', 'Create habit'),
               onTap: _submit,
             ),
           ],
@@ -487,12 +495,15 @@ class _EmptyHabits extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '还没有习惯',
+            context.tr('还没有习惯', 'No habits yet'),
             style: AppTextStyles.title.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 6),
           Text(
-            '先创建一个长期想坚持的行为，比如运动、阅读、早睡。',
+            context.tr(
+              '先创建一个长期想坚持的行为，比如运动、阅读、早睡。',
+              'Start with one behavior you want to keep, like exercise, reading, or going to bed earlier.',
+            ),
             textAlign: TextAlign.center,
             style: AppTextStyles.caption.copyWith(fontSize: 13, height: 1.5),
           ),

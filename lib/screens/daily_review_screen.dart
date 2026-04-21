@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_i18n.dart';
 import '../models/daily_review.dart';
 import '../services/app_state.dart';
 import '../theme.dart';
@@ -92,16 +93,19 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
   Future<void> _save() async {
     for (final dimension in DailyReviewDimension.values) {
       if (_statuses[dimension] == null) {
-        showToast(context, '${dimension.label} 还没有选择状态');
+        showToast(context, '${context.reviewDimensionLabel(dimension.apiValue)} ${context.tr('还没有选择状态', 'does not have a status yet')}');
         return;
       }
       if (_commentCtrls[dimension]!.text.trim().isEmpty) {
-        showToast(context, '${dimension.label} 的备注不能为空');
+        showToast(context, context.tr(
+          '${context.reviewDimensionLabel(dimension.apiValue)} 的备注不能为空',
+          'A note for ${context.reviewDimensionLabel(dimension.apiValue)} cannot be empty.',
+        ));
         return;
       }
     }
     if (_priorityCtrl.text.trim().isEmpty) {
-      showToast(context, '给明天留一件最想照顾的事吧');
+      showToast(context, context.tr('给明天留一件最想照顾的事吧', 'Leave one thing you most want to take care of tomorrow.'));
       return;
     }
 
@@ -121,7 +125,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
       final saved = await context.read<AppState>().saveDailyReview(review);
       _bindReview(saved);
       if (!mounted) return;
-      showToast(context, '今天的记录已经保存好了');
+      showToast(context, context.tr('今天的记录已经保存好了', 'Today\'s note has been saved.'));
       setState(() {
         _hasExistingReview = true;
       });
@@ -180,8 +184,10 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
                   ),
                   child: Text(
                     isSaving
-                        ? '保存中...'
-                        : (_hasExistingReview ? '保存今天的记录' : '写下今天的记录'),
+                        ? context.tr('保存中...', 'Saving...')
+                        : (_hasExistingReview
+                            ? context.tr('保存今天的记录', 'Save today\'s note')
+                            : context.tr('写下今天的记录', 'Write today\'s note')),
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700),
                   ),
@@ -211,11 +217,14 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('每日复盘',
+                Text(context.tr('每日复盘', 'Daily review'),
                     style: AppTextStyles.headline.copyWith(fontSize: 24)),
                 const SizedBox(height: 4),
                 Text(
-                  '${DateFormat('yyyy年M月d日 EEEE', 'zh').format(_selectedDate)}  ·  一句话也可以',
+                  '${DateFormat(
+                    context.isEnglish ? 'MMMM d, y EEEE' : 'yyyy年M月d日 EEEE',
+                    context.isEnglish ? 'en' : 'zh',
+                  ).format(_selectedDate)}  ·  ${context.tr('一句话也可以', 'One sentence is enough')}',
                   style: AppTextStyles.caption.copyWith(
                     fontStyle: FontStyle.italic,
                     fontSize: 13,
@@ -241,13 +250,13 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('加载失败', style: AppTextStyles.title),
+            Text(context.tr('加载失败', 'Load failed'), style: AppTextStyles.title),
             const SizedBox(height: 8),
             Text(_error!, style: AppTextStyles.body),
             const SizedBox(height: 14),
             TextButton(
               onPressed: _loadReview,
-              child: const Text('重试'),
+              child: Text(context.tr('重试', 'Retry')),
             ),
           ],
         ),
@@ -290,7 +299,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                dimension.label,
+                context.reviewDimensionLabel(dimension.apiValue),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -309,7 +318,10 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
             style: const TextStyle(
                 fontSize: 14, color: AppColors.text, height: 1.6),
             decoration: InputDecoration(
-              hintText: '描述今天在${dimension.label}上的真实感受...',
+              hintText: context.tr(
+                '描述今天在${context.reviewDimensionLabel(dimension.apiValue)}上的真实感受...',
+                'Describe how you really felt about ${context.reviewDimensionLabel(dimension.apiValue)} today...',
+              ),
               hintStyle: AppTextStyles.caption.copyWith(fontSize: 13),
               border: InputBorder.none,
               isDense: true,
@@ -399,7 +411,7 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
                   size: 16, color: Colors.orangeAccent),
               const SizedBox(width: 8),
               Text(
-                '明日最重要的事',
+                context.tr('明日最重要的事', 'Most important thing for tomorrow'),
                 style: AppTextStyles.title
                     .copyWith(fontSize: 14, fontWeight: FontWeight.w800),
               ),
@@ -413,7 +425,10 @@ class _DailyReviewScreenState extends State<DailyReviewScreen> {
             style: const TextStyle(
                 fontSize: 14, color: AppColors.text, height: 1.6),
             decoration: InputDecoration(
-              hintText: '只写一件最重要的事，开启新的一天...',
+              hintText: context.tr(
+                '只写一件最重要的事，开启新的一天...',
+                'Write down just one most important thing to start a new day...',
+              ),
               hintStyle: AppTextStyles.caption.copyWith(fontSize: 13),
               border: InputBorder.none,
               isDense: true,

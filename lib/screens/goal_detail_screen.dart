@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_i18n.dart';
 import '../theme.dart';
 import '../models/goal.dart';
 import '../services/app_state.dart';
@@ -83,11 +84,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Row(
-              children: const [
-                Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
+              children: [
+                const Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.sub),
                 SizedBox(width: 4),
-                Text('返回',
-                    style: TextStyle(fontSize: 14, color: AppColors.sub)),
+                Text(context.tr('返回', 'Back'),
+                    style: const TextStyle(fontSize: 14, color: AppColors.sub)),
               ],
             ),
           ),
@@ -148,7 +149,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       color: AppColors.pill,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('编辑',
+                    child: Text(context.tr('编辑', 'Edit'),
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -163,7 +164,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$doneTasks/$totalTasks 任务', style: AppTextStyles.caption),
+              Text(context.tr('$doneTasks/$totalTasks 任务', '$doneTasks/$totalTasks tasks'), style: AppTextStyles.caption),
               Text('${progressPercent}%',
                   style: const TextStyle(
                       fontSize: 18,
@@ -174,14 +175,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           const SizedBox(height: 8),
           GoalProgressBar(progress: progressPercent / 100, height: 6),
           const SizedBox(height: 8),
-          Text('剩余 ${goal.remainingDays} 天', style: AppTextStyles.caption),
+          Text(context.tr('剩余 ${goal.remainingDays} 天', '${goal.remainingDays} days left'), style: AppTextStyles.caption),
           if (!goal.isDone) ...[
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: _ActionBtn(
-                    label: goal.isPaused ? '恢复目标' : '暂停目标',
+                    label: goal.isPaused ? context.tr('恢复目标', 'Resume goal') : context.tr('暂停目标', 'Pause goal'),
                     onTap: () async {
                       final newStatus = goal.isPaused ? 'active' : 'paused';
                       final ok = await context
@@ -189,7 +190,10 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                           .updateGoalStatus(goal.id, newStatus);
                       if (mounted && ok) {
                         showToast(
-                            context, newStatus == 'active' ? '目标已恢复' : '目标已暂停');
+                            context,
+                            newStatus == 'active'
+                                ? context.tr('目标已恢复', 'Goal resumed')
+                                : context.tr('目标已暂停', 'Goal paused'));
                       }
                     },
                   ),
@@ -197,7 +201,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _ActionBtn(
-                    label: '终止目标',
+                    label: context.tr('终止目标', 'End goal'),
                     danger: true,
                     onTap: () async {
                       final ok = await _confirmEnd(context);
@@ -229,7 +233,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           ],
         ),
         child: Row(
-          children: ['今日任务', '全部时间轴']
+          children: [context.tr('今日任务', 'Today'), context.tr('全部时间轴', 'Timeline')]
               .asMap()
               .entries
               .map((e) => Expanded(
@@ -268,17 +272,18 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           builder: (_) => AlertDialog(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text('终止目标',
+            title: Text(context.tr('终止目标', 'End goal'),
                 style: TextStyle(fontWeight: FontWeight.w700)),
-            content: const Text('终止后将保留历史记录，但不可恢复。确认终止吗？'),
+            content: Text(context.tr('终止后将保留历史记录，但不可恢复。确认终止吗？',
+                'History will be kept, but the goal cannot be restored. Continue?')),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('取消')),
+                  child: Text(context.tr('取消', 'Cancel'))),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 child:
-                    const Text('终止', style: TextStyle(color: AppColors.danger)),
+                    Text(context.tr('终止', 'End'), style: const TextStyle(color: AppColors.danger)),
               ),
             ],
           ),
@@ -296,12 +301,14 @@ class _TodayTab extends StatelessWidget {
     AppState state,
     TaskViewItem task,
   ) async {
-    String fallbackToast = task.done ? '已取消完成' : '已完成任务';
+    String fallbackToast = task.done
+        ? context.tr('已取消完成', 'Marked as not done')
+        : context.tr('已完成任务', 'Task completed');
     try {
       final result = await state.toggleTaskByKey(task.key);
       if (!context.mounted) return;
       if (result.goalCompleted) {
-        showToast(context, '目标已完成，已获得勋章');
+        showToast(context, context.tr('目标已完成，已获得勋章', 'Goal completed. Badge unlocked.'));
         showCompletionCeremony(context);
       } else {
         showToast(context, fallbackToast);
@@ -317,7 +324,7 @@ class _TodayTab extends StatelessWidget {
     AppState state,
     TaskViewItem task,
   ) async {
-    showToast(context, '已顺延任务');
+    showToast(context, context.tr('已顺延任务', 'Task deferred'));
     try {
       await state.deferTaskByKey(task.key, DateTime.now());
     } catch (e) {
@@ -332,7 +339,7 @@ class _TodayTab extends StatelessWidget {
     final tasks = state.taskViewsForDate(goal, DateTime.now());
     if (tasks.isEmpty) {
       return const Center(
-          child: Padding(padding: EdgeInsets.all(40), child: Text('今天没有任务')));
+          child: Padding(padding: EdgeInsets.all(40), child: Text('No tasks today')));
     }
 
     return Padding(
@@ -340,7 +347,7 @@ class _TodayTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionLabel('今日任务'),
+          SectionLabel(context.tr('今日任务', 'Today\'s tasks')),
           Container(
             decoration: BoxDecoration(
               color: AppColors.white,
@@ -384,7 +391,7 @@ class _MiniCalendar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionLabel('打卡记录'),
+        SectionLabel(context.tr('打卡记录', 'Check-in record')),
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -424,7 +431,7 @@ class _MiniCalendar extends StatelessWidget {
               } else if (isToday) {
                 bg = AppColors.accent;
                 fg = Colors.white;
-                label = '今';
+                label = context.tr('今', 'T');
               }
 
               return Container(
@@ -489,7 +496,7 @@ class _TimelineTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 if (tasks.isEmpty)
-                  const Text('无任务',
+                  Text(context.tr('无任务', 'No tasks'),
                       style: TextStyle(fontSize: 12, color: AppColors.sub))
                 else
                   ...tasks.map((task) => Padding(

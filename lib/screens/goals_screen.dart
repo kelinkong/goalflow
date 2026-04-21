@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_i18n.dart';
 import '../theme.dart';
 import '../models/goal.dart';
 import '../services/app_state.dart';
@@ -49,9 +50,9 @@ class GoalsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('目标', style: AppTextStyles.headline),
+                          Text(context.tr('目标', 'Goals'), style: AppTextStyles.headline),
                           const SizedBox(height: 4),
-                          Text('把大愿望拆解成小步子',
+                          Text(context.tr('把大愿望拆解成小步子', 'Break big ambitions into small steps.'),
                               style: AppTextStyles.caption.copyWith(
                                   fontStyle: FontStyle.italic, fontSize: 14)),
                         ],
@@ -138,11 +139,11 @@ class _GoalSummaryCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _MiniGoalStat(label: '今日完成', value: '$doneTasks'),
+          _MiniGoalStat(label: context.tr('今日完成', 'Done today'), value: '$doneTasks'),
           const SizedBox(width: 10),
-          _MiniGoalStat(label: '任务总数', value: '$totalTasks'),
+          _MiniGoalStat(label: context.tr('任务总数', 'Total tasks'), value: '$totalTasks'),
           const SizedBox(width: 10),
-          _MiniGoalStat(label: '最长连续', value: '${streak}天'),
+          _MiniGoalStat(label: context.tr('最长连续', 'Best streak'), value: context.tr('${streak}天', '${streak}d')),
         ],
       ),
     );
@@ -211,12 +212,15 @@ class _EmptyGoals extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            '还没有目标',
+            context.tr('还没有目标', 'No goals yet'),
             style: AppTextStyles.title.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
-            '点击右上角创建一个目标，让 AI 帮你拆解成可执行的小任务。',
+            context.tr(
+              '点击右上角创建一个目标，让 AI 帮你拆解成可执行的小任务。',
+              'Tap the top-right corner to create a goal and let AI break it into actionable tasks.',
+            ),
             textAlign: TextAlign.center,
             style: AppTextStyles.caption.copyWith(fontSize: 13, height: 1.5),
           ),

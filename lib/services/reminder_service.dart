@@ -5,6 +5,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../l10n/app_i18n.dart';
 
 class ReminderService {
   ReminderService._();
@@ -97,19 +98,28 @@ class ReminderService {
 
     await _notifications.zonedSchedule(
       _dailyReminderId,
-      'GoalFlow 每日提醒',
-      '如果你愿意，现在可以回来看看今天。',
+      AppI18n.tr(
+        zh: 'GoalFlow 每日提醒',
+        en: 'GoalFlow Daily Reminder',
+      ),
+      AppI18n.tr(
+        zh: '如果你愿意，现在可以回来看看今天。',
+        en: 'If you want, come back and check in with today.',
+      ),
       scheduled,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'goalflow_daily_reminder',
-          '每日提醒',
-          channelDescription: '轻提醒你回来看看今天的目标、习惯和记录',
+          AppI18n.tr(zh: '每日提醒', en: 'Daily Reminder'),
+          channelDescription: AppI18n.tr(
+            zh: '轻提醒你回来看看今天的目标、习惯和记录',
+            en: 'A gentle reminder to revisit today\'s goals, habits, and notes.',
+          ),
           importance: Importance.high,
           priority: Priority.high,
         ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
+        iOS: const DarwinNotificationDetails(),
+        macOS: const DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,

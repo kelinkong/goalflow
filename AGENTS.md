@@ -1,11 +1,18 @@
 # AGENTS.md
 
-请使用第一性原理思考。你不能总是假设我非常清楚自己想要什么和该怎么得到。请保持审慎，从原始需求和问题出发，如果动机和目标不清晰，停下来和我讨论。如果目标清晰但是路径不是最短，告诉我，并且建议更好的办法。
+文档先行 (Docs First)：在进行任何代码改动前，必须优先检查 docs/ 或相关文档是否需要更新。先提交文档修改建议，再执行代码开发。
+
+拒绝假设：如果你不确定 goalflow 的业务动机，停下来询问。
+
+手术刀原则：只修改与任务相关的行。严禁大规模重构、修改无关格式或删除非你产生的代码。
+
+极简主义：如果 50 行代码能解决问题，不要写 200 行。拒绝过度设计和不必要的配置化。
+
+路径最短：如果我给出的路径不是最优的，请推翻我并建议更好的办法
 
 ## 技术栈
 
 - 用户端：Flutter / Dart
-- 管理台前端：Vue 3、Vue Router 4、Axios、Vite 5
 - 后端：Java 17、Spring Boot、Spring Security、MyBatis-Plus、MySQL、JWT、Maven
 
 ## 项目结构
@@ -15,7 +22,6 @@ goalflow/
 ├── AGENTS.md
 ├── docker-compose.yml
 ├── nginx.conf
-├── admin_console/            # 管理台前端
 ├── backend/
 │   ├── pom.xml               # 后端父工程
 │   └── goalflow-api/         # 后端 API
@@ -41,7 +47,7 @@ goalflow/
 
 ## 部署方式
 
-- 使用 `ssh <your-server>` 连接远程服务器。
+- 使用 `ssh tencent` 连接远程服务器。
 - 默认部署目录：`~/goalflow`
 - 服务器通过 Cloudflare 对外暴露，Cloudflare 转发到服务器 `80` 端口。防火墙开放了8080端口
 - 部署使用 Docker Compose。
@@ -49,14 +55,12 @@ goalflow/
 - 当前后端 jar 路径：`~/goalflow/app/app.jar`
 
 常用命令：
-- 使用 `ssh <your-server>` 连接远程服务器。
+- 使用 `ssh tencent` 连接远程服务器。
 ...
-cd admin_console && npm run build
-cd backend/goalflow-api && mvn package -DskipTests
-tar -C admin_console/dist -cf - . | ssh <your-server> 'tar -C ~/goalflow/www -xf -'
-ssh <your-server> 'cat > ~/goalflow/app/app.jar' < backend/goalflow-api/target/goalflow-api-1.0.0.jar # 直接上传 jar 包
-ssh <your-server> 'docker restart backend' # 仅仅启动后端
-ssh <your-server> 'cd ~/goalflow && docker-compose down && docker-compose up -d' # 重启整个服务
+
+ssh tencent 'cat > ~/goalflow/app/app.jar' < backend/goalflow-api/target/goalflow-api-1.0.0.jar # 直接上传 jar 包
+ssh tencent 'docker restart backend' # 仅仅启动后端
+ssh tencent 'cd ~/goalflow && docker-compose down && docker-compose up -d' # 重启整个服务
 
 ```
 

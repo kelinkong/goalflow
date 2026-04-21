@@ -1,6 +1,18 @@
 /*
  * Copyright (c) 2026 GoalFlow Contributors
- * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 import 'package:flutter/material.dart';
@@ -9,6 +21,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'l10n/app_i18n.dart';
 import 'services/app_state.dart';
 import 'services/reminder_service.dart';
 import 'theme.dart';
@@ -28,6 +41,7 @@ Future<void> main() async {
   }
   await ReminderService.instance.initialize();
   await initializeDateFormatting('zh', null);
+  await initializeDateFormatting('en', null);
   final appState = AppState();
   await appState.initializeLocalState();
   await appState.restoreSession();
@@ -47,7 +61,7 @@ class GoalFlowApp extends StatelessWidget {
         title: 'GoalFlow',
         theme: buildTheme(),
         debugShowCheckedModeBanner: false,
-        locale: const Locale('zh'),
+        locale: context.watch<AppState>().locale,
         supportedLocales: const [
           Locale('zh'),
           Locale('en'),
@@ -89,7 +103,12 @@ class _MainShellState extends State<MainShell> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('登录状态已过期，请重新登录')),
+          SnackBar(
+            content: Text(
+              context.tr('登录状态已过期，请重新登录',
+                  'Your session has expired. Please sign in again.'),
+            ),
+          ),
         );
         context.read<AppState>().clearGlobalMessage();
         if (!_authPromptOpen && !appState.isLoggedIn) {
@@ -114,16 +133,15 @@ class _BottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   const _BottomNav({required this.current, required this.onTap});
 
-  static const _items = [
-    (icon: Icons.home_rounded, label: '首页'),
-    (icon: Icons.track_changes_rounded, label: '目标'),
-    (icon: Icons.self_improvement_rounded, label: '习惯'),
-    (icon: Icons.calendar_month_rounded, label: '轨迹'),
-    (icon: Icons.settings_rounded, label: '设置'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final items = [
+      (icon: Icons.home_rounded, label: context.tr('首页', 'Home')),
+      (icon: Icons.track_changes_rounded, label: context.tr('目标', 'Goals')),
+      (icon: Icons.self_improvement_rounded, label: context.tr('习惯', 'Habits')),
+      (icon: Icons.calendar_month_rounded, label: context.tr('轨迹', 'Progress')),
+      (icon: Icons.settings_rounded, label: context.tr('设置', 'Settings')),
+    ];
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -150,7 +168,7 @@ class _BottomNav extends StatelessWidget {
           ],
         ),
         child: Row(
-          children: _items.asMap().entries.map((e) {
+          children: items.asMap().entries.map((e) {
             final i = e.key;
             final item = e.value;
             final active = i == current;

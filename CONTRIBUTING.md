@@ -37,4 +37,4 @@ We are committed to providing a friendly, safe and welcoming environment for all
 - Dart SDK
 
 ## License
-By contributing to GoalFlow, you agree that your contributions will be licensed under the MIT License.
+By contributing to GoalFlow, you agree that your contributions will be licensed under the GNU General Public License v3.0.

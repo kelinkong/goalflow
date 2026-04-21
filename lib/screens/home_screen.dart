@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_i18n.dart';
 import '../models/habit.dart';
 import '../theme.dart';
 import '../models/goal.dart';
@@ -64,25 +65,22 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(child: _buildWeekStrip()),
 
-            // 支柱一：今日习惯
             SliverToBoxAdapter(
-              child: _buildSectionTitle('今日习惯', '🔄'),
+              child: _buildSectionTitle(context.tr('今日习惯', 'Today\'s habits'), '🔄'),
             ),
             SliverToBoxAdapter(child: _buildHabitCard(state)),
 
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-            // 支柱二：今日复盘
             SliverToBoxAdapter(
-              child: _buildSectionTitle('今日复盘', '📝'),
+              child: _buildSectionTitle(context.tr('今日复盘', 'Today\'s review'), '📝'),
             ),
             SliverToBoxAdapter(child: _buildDailyReviewCard(state)),
 
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-            // 支柱三：今日目标 (只看待办)
             SliverToBoxAdapter(
-              child: _buildSectionTitle('今日目标', '🎯'),
+              child: _buildSectionTitle(context.tr('今日目标', 'Today\'s goals'), '🎯'),
             ),
             SliverToBoxAdapter(
               child: Padding(
@@ -129,12 +127,18 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('你好 👋', style: AppTextStyles.headline),
+                Text(context.tr('你好 👋', 'Hello 👋'), style: AppTextStyles.headline),
                 const SizedBox(height: 4),
                 Text(
                   _isToday
-                      ? '今天，${DateFormat('M月d日').format(_selectedDate)}, 不要焦虑'
-                      : DateFormat('M月d日 EEEE', 'zh').format(_selectedDate),
+                      ? context.tr(
+                          '今天，${context.formatMonthDay(_selectedDate)}, 不要焦虑',
+                          'Today, ${context.formatMonthDay(_selectedDate)}. Stay steady.',
+                        )
+                      : DateFormat(
+                          context.isEnglish ? 'MMM d EEEE' : 'M月d日 EEEE',
+                          context.isEnglish ? 'en' : 'zh',
+                        ).format(_selectedDate),
                   style: AppTextStyles.caption.copyWith(
                     fontStyle: FontStyle.italic,
                     fontSize: 14,
@@ -167,8 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildWeekStrip() {
     final week = _weekDates;
-    final weekLabels = ['一', '二', '三', '四', '五', '六', '日'];
-
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
@@ -199,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   Text(
-                    '周${weekLabels[i]}',
+                    context.weekdayChipLabel(date.weekday),
                     style: TextStyle(
                       fontSize: 11,
                       color: isSelected ? AppColors.text : AppColors.sub,
@@ -256,9 +258,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final labels = [
-      '待完成 · $pending',
-      '已完成 · $done',
-      '已顺延 · $deferred',
+      context.tr('待完成 · $pending', 'To do · $pending'),
+      context.tr('已完成 · $done', 'Done · $done'),
+      context.tr('已顺延 · $deferred', 'Deferred · $deferred'),
     ];
 
     return Container(
@@ -321,7 +323,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasReview ? '今天已经留过记录' : '给今天留一点记录',
+                  hasReview
+                      ? context.tr('今天已经留过记录', 'You already left a note for today')
+                      : context.tr('给今天留一点记录', 'Leave a note for today'),
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -329,7 +333,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  hasReview ? '你已经为今天留下了一点痕迹。' : '一句话也可以，从现在的感受开始。',
+                  hasReview
+                      ? context.tr('你已经为今天留下了一点痕迹。', 'You have already captured a trace of today.')
+                      : context.tr('一句话也可以，从现在的感受开始。', 'One sentence is enough. Start from how you feel now.'),
                   style: AppTextStyles.caption.copyWith(fontSize: 12),
                 ),
               ],
@@ -356,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: Text(hasReview ? '回看' : '去写'),
+            child: Text(hasReview ? context.tr('回看', 'Review') : context.tr('去写', 'Write')),
           ),
         ],
       ),
@@ -388,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '今日习惯',
+                      context.tr('今日习惯', 'Today\'s habits'),
                       style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -397,8 +403,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       totalCount == 0
-                          ? '还没有习惯记录'
-                          : '已完成 $doneCount / $totalCount',
+                          ? context.tr('还没有习惯记录', 'No habit records yet')
+                          : context.tr('已完成 $doneCount / $totalCount',
+                              'Completed $doneCount / $totalCount'),
                       style: AppTextStyles.caption.copyWith(fontSize: 12),
                     ),
                   ],
@@ -424,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('管理'),
+                child: Text(context.tr('管理', 'Manage')),
               ),
             ],
           ),
@@ -446,7 +453,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTaskList(AppState state, List<Goal> goals) {
     if (goals.isEmpty) {
-      return const _EmptyState(message: '还没有创建目标，去看看你想做成一件什么事。');
+      return _EmptyState(message: context.tr(
+        '还没有创建目标，去看看你想做成一件什么事。',
+        'No goals yet. Start with one thing you want to accomplish.',
+      ));
     }
 
     final pendingGoals = goals.where((g) {
@@ -455,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
 
     if (pendingGoals.isEmpty) {
-      return _EmptyState(message: '今日目标已全部达成 ✨');
+      return _EmptyState(message: context.tr('今日目标已全部达成 ✨', 'All goals for today are done ✨'));
     }
 
     return Column(
@@ -516,7 +526,9 @@ class _HabitQuickTile extends StatelessWidget {
                   try {
                     await context.read<AppState>().toggleHabit(habit, date);
                     if (!context.mounted) return;
-                    showToast(context, isDone ? '已取消打卡' : '已完成习惯');
+                    showToast(context, isDone
+                        ? context.tr('已取消打卡', 'Check-in removed')
+                        : context.tr('已完成习惯', 'Habit completed'));
                   } catch (e) {
                     if (!context.mounted) return;
                     showToast(context, userErrorMessage(e));
@@ -547,7 +559,9 @@ class _HabitQuickTile extends StatelessWidget {
                     Text(
                       habit.category?.toString().isNotEmpty == true
                           ? habit.category.toString()
-                          : (isToday ? '今天完成一次就够' : '这一天的习惯记录'),
+                          : (isToday
+                              ? context.tr('今天完成一次就够', 'One check-in today is enough')
+                              : context.tr('这一天的习惯记录', 'Habit record for this day')),
                       style: AppTextStyles.caption
                           .copyWith(fontSize: 11, height: 1.4),
                     ),
@@ -562,7 +576,8 @@ class _HabitQuickTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '${state.habitStreak(habit)}天',
+                  context.tr('${state.habitStreak(habit)}天',
+                      '${state.habitStreak(habit)}d'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -592,10 +607,12 @@ class _GoalSectionState extends State<_GoalSection> {
       final result = await state.toggleTaskByKey(task.key);
       if (!mounted) return;
       if (result.goalCompleted) {
-        showToast(context, '目标已完成');
+        showToast(context, context.tr('目标已完成', 'Goal completed'));
         showCompletionCeremony(context);
       } else {
-        showToast(context, task.done ? '已取消完成' : '已完成任务');
+        showToast(context, task.done
+            ? context.tr('已取消完成', 'Marked as not done')
+            : context.tr('已完成任务', 'Task completed'));
       }
     } catch (e) {
       if (!mounted) return;
@@ -604,7 +621,7 @@ class _GoalSectionState extends State<_GoalSection> {
   }
 
   Future<void> _handleDeferTask(AppState state, TaskViewItem task) async {
-    showToast(context, '已顺延任务');
+    showToast(context, context.tr('已顺延任务', 'Task deferred'));
     try {
       await state.deferTaskByKey(task.key, widget.selectedDate);
     } catch (e) {
@@ -672,7 +689,7 @@ class _GoalSectionState extends State<_GoalSection> {
                       decoration: BoxDecoration(
                           color: AppColors.pill,
                           borderRadius: BorderRadius.circular(10)),
-                      child: Text('可补卡',
+                      child: Text(context.tr('可补卡', 'Make up'),
                           style: TextStyle(
                               fontSize: 11,
                               color: AppColors.accent,

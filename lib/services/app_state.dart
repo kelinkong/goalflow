@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_i18n.dart';
 import '../models/goal.dart';
 import '../models/goal_decomposition.dart';
 import '../models/habit.dart';
@@ -80,6 +82,7 @@ class AppState extends ChangeNotifier {
   static const _reminderEnabledStorageKey = 'daily_reminder_enabled';
   static const _reminderHourStorageKey = 'daily_reminder_hour';
   static const _reminderMinuteStorageKey = 'daily_reminder_minute';
+  static const _localeStorageKey = 'app_locale';
   final ApiService _api = ApiService();
   String? _globalMessage;
 
@@ -112,7 +115,9 @@ class AppState extends ChangeNotifier {
   bool _reminderEnabled = false;
   int _reminderHour = 19;
   int _reminderMinute = 0;
+  Locale _locale = const Locale('zh');
   bool get reminderEnabled => _reminderEnabled;
+  Locale get locale => _locale;
   TimeOfDay get reminderTime =>
       TimeOfDay(hour: _reminderHour, minute: _reminderMinute);
   String get reminderTimeLabel =>
@@ -150,6 +155,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> initializeLocalState() async {
     final prefs = await SharedPreferences.getInstance();
+    final savedLocale = prefs.getString(_localeStorageKey);
+    final systemLanguageCode = PlatformDispatcher.instance.locale.languageCode;
+    final initialLanguageCode = savedLocale ??
+        (systemLanguageCode.toLowerCase().startsWith('en') ? 'en' : 'zh');
+    _locale = Locale(initialLanguageCode);
+    AppI18n.currentLanguageCode = initialLanguageCode;
+    _api.languageCode = initialLanguageCode;
     _reminderEnabled = prefs.getBool(_reminderEnabledStorageKey) ?? false;
     _reminderHour = prefs.getInt(_reminderHourStorageKey) ?? 19;
     _reminderMinute = prefs.getInt(_reminderMinuteStorageKey) ?? 0;
@@ -202,9 +214,28 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setLocale(Locale locale) async {
+    final normalizedCode =
+        locale.languageCode.toLowerCase().startsWith('en') ? 'en' : 'zh';
+    if (_locale.languageCode == normalizedCode) {
+      return;
+    }
+    _locale = Locale(normalizedCode);
+    AppI18n.currentLanguageCode = normalizedCode;
+    _api.languageCode = normalizedCode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_localeStorageKey, normalizedCode);
+    notifyListeners();
+  }
+
   void _handleUnauthorized() {
     _api.setToken('');
-    _resetSessionState(globalMessage: '登录状态已过期，请重新登录');
+    _resetSessionState(
+      globalMessage: AppI18n.tr(
+        zh: '登录状态已过期，请重新登录',
+        en: 'Your session has expired. Please sign in again.',
+      ),
+    );
     unawaited(_clearStoredToken());
     notifyListeners();
   }
@@ -592,7 +623,10 @@ class AppState extends ChangeNotifier {
       if (cached != null) {
         return cached;
       }
-      throw Exception('保存进行中，请稍后重试');
+      throw Exception(AppI18n.tr(
+        zh: '保存进行中，请稍后重试',
+        en: 'Save already in progress. Please try again shortly.',
+      ));
     }
     try {
       final payload = {
@@ -723,7 +757,10 @@ class AppState extends ChangeNotifier {
     }
     final count = await _todayDecomposeCount();
     if (count >= _dailyAiDecomposeLimit) {
-      throw Exception('今天的 AI 拆解次数已达上限（10次），请明天再试');
+      throw Exception(AppI18n.tr(
+        zh: '今天的 AI 拆解次数已达上限（10次），请明天再试',
+        en: 'You have reached today\'s AI breakdown limit (10). Please try again tomorrow.',
+      ));
     }
 
     // 1. 提交任务
@@ -748,14 +785,22 @@ class AppState extends ChangeNotifier {
         return GoalDecomposition.fromJson(data);
       } else if (status == 'FAILED') {
         final error = statusRes['error']?.toString() ?? 'Unknown error';
-        throw Exception('AI 拆解失败: $error');
+        throw Exception(
+          AppI18n.tr(
+            zh: 'AI 拆解失败: $error',
+            en: 'AI breakdown failed: $error',
+          ),
+        );
       }
       
       // 如果是 PENDING 则继续
       retryCount++;
     }
 
-    throw Exception('AI 拆解超时，请稍后在任务列表查看');
+    throw Exception(AppI18n.tr(
+      zh: 'AI 拆解超时，请稍后在任务列表查看',
+      en: 'AI breakdown timed out. Please check the task list later.',
+    ));
   }
 
   Future<String> exportGoalData() async {

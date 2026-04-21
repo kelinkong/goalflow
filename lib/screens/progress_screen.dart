@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import '../l10n/app_i18n.dart';
 import '../models/daily_review.dart';
 import '../models/habit.dart';
 import '../theme.dart';
@@ -20,15 +21,19 @@ class ProgressScreen extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('来到 GoalFlow 第 $days 天',
+        title: Text(context.tr('来到 GoalFlow 第 $days 天',
+                'Day $days with GoalFlow'),
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
         content: Text(
-            '你已经和 GoalFlow 一起走到第 $days 天。\n\n这些记录不是为了证明什么，而是在帮你看见自己是怎样一点点走过来的。\n\n有起伏也没关系，能继续回来看看，就很好。不要焦虑噢。'),
+            context.tr(
+              '你已经和 GoalFlow 一起走到第 $days 天。\n\n这些记录不是为了证明什么，而是在帮你看见自己是怎样一点点走过来的。\n\n有起伏也没关系，能继续回来看看，就很好。不要焦虑噢。',
+              'You have made it to day $days with GoalFlow.\n\nThese records are not here to prove anything. They help you see how you have been moving forward bit by bit.\n\nUps and downs are normal. Coming back is already meaningful.',
+            )),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('知道了',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(context.tr('知道了', 'Got it'),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -69,9 +74,10 @@ class ProgressScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('轨迹', style: AppTextStyles.headline),
+                    Text(context.tr('轨迹', 'Progress'), style: AppTextStyles.headline),
                     const SizedBox(height: 4),
-                    Text('在这里，看见自己这段时间的变化',
+                    Text(context.tr('在这里，看见自己这段时间的变化',
+                            'See how you have been changing over time here.'),
                         style: AppTextStyles.caption.copyWith(
                             fontStyle: FontStyle.italic, fontSize: 14)),
                   ],
@@ -85,19 +91,22 @@ class ProgressScreen extends StatelessWidget {
                   children: [
                     _StatCard(
                       value: '$totalDays',
-                      label: '记录天数',
+                      label: context.tr('记录天数', 'Days tracked'),
                       onTap: () => _showGrowthDialog(context, totalDays),
                     ),
                     const SizedBox(width: 10),
                     _StatCard(
                       value: '${reviewRate.round()}%',
-                      label: '复盘覆盖',
-                      onTap: () => showToast(context, '点开下方日历格子，可以回看那天留下的记录。'),
+                      label: context.tr('复盘覆盖', 'Review coverage'),
+                      onTap: () => showToast(context, context.tr(
+                        '点开下方日历格子，可以回看那天留下的记录。',
+                        'Tap a calendar cell below to revisit the record from that day.',
+                      )),
                     ),
                     const SizedBox(width: 10),
                     _StatCard(
                       value: '${habits.length}',
-                      label: '塑造习惯',
+                      label: context.tr('塑造习惯', 'Active habits'),
                       onTap: () => _navigateToHabits(context),
                     ),
                   ],
@@ -245,14 +254,16 @@ class _MonthCalendarState extends State<_MonthCalendar> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('打卡日历',
+          Text(context.tr('打卡日历', 'Check-in calendar'),
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppColors.text)),
           const SizedBox(height: 16),
           Row(
-            children: ['日', '一', '二', '三', '四', '五', '六']
+            children: (context.isEnglish
+                    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                    : ['日', '一', '二', '三', '四', '五', '六'])
                 .map((d) => Expanded(
                       child: Center(
                           child: Text(d,
@@ -379,10 +390,10 @@ class _MonthCalendarState extends State<_MonthCalendar> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _CalendarLegendItem(color: _GitHubHeat.colors[0], label: '0项'),
-              _CalendarLegendItem(color: _GitHubHeat.colors[1], label: '1项'),
-              _CalendarLegendItem(color: _GitHubHeat.colors[2], label: '2项'),
-              _CalendarLegendItem(color: _GitHubHeat.colors[3], label: '3项'),
+              _CalendarLegendItem(color: _GitHubHeat.colors[0], label: context.tr('0项', '0')),
+              _CalendarLegendItem(color: _GitHubHeat.colors[1], label: context.tr('1项', '1')),
+              _CalendarLegendItem(color: _GitHubHeat.colors[2], label: context.tr('2项', '2')),
+              _CalendarLegendItem(color: _GitHubHeat.colors[3], label: context.tr('3项', '3')),
             ],
           ),
           const SizedBox(height: 12),
@@ -390,7 +401,10 @@ class _MonthCalendarState extends State<_MonthCalendar> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              '● 左点：目标完成  ● 中点：习惯完成  ● 右点：复盘完成',
+              context.tr(
+                '● 左点：目标完成  ● 中点：习惯完成  ● 右点：复盘完成',
+                '● Left: goals  ● Middle: habits  ● Right: review',
+              ),
               style: AppTextStyles.caption.copyWith(fontSize: 11),
               textAlign: TextAlign.center,
             ),
@@ -540,24 +554,27 @@ class _DayOverviewSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                DateFormat('M月d日 EEEE', 'zh').format(date),
+                DateFormat(
+                  context.isEnglish ? 'MMM d EEEE' : 'M月d日 EEEE',
+                  context.isEnglish ? 'en' : 'zh',
+                ).format(date),
                 style: AppTextStyles.headline.copyWith(fontSize: 22),
               ),
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _MiniStat(value: '$doneCount', label: '已完成'),
+                  _MiniStat(value: '$doneCount', label: context.tr('已完成', 'Done')),
                   const SizedBox(width: 8),
-                  _MiniStat(value: '$pendingCount', label: '待完成'),
+                  _MiniStat(value: '$pendingCount', label: context.tr('待完成', 'Pending')),
                   const SizedBox(width: 8),
-                  _MiniStat(value: '$deferredCount', label: '已顺延'),
+                  _MiniStat(value: '$deferredCount', label: context.tr('已顺延', 'Deferred')),
                 ],
               ),
               const SizedBox(height: 18),
-              const SectionLabel('任务完成情况'),
+              SectionLabel(context.tr('任务完成情况', 'Task summary')),
               if (sections.isEmpty)
-                const _InfoCard(
-                  child: Text('这一天没有任务安排。', style: AppTextStyles.body),
+                _InfoCard(
+                  child: Text(context.tr('这一天没有任务安排。', 'No tasks were scheduled for this day.'), style: AppTextStyles.body),
                 )
               else
                 ...sections.map((entry) => _TaskSummaryCard(
@@ -565,15 +582,15 @@ class _DayOverviewSheet extends StatelessWidget {
                       tasks: entry.tasks,
                     )),
               const SizedBox(height: 16),
-              const SectionLabel('习惯打卡'),
+              SectionLabel(context.tr('习惯打卡', 'Habit check-ins')),
               if (habits.isEmpty)
-                const _InfoCard(
-                  child: Text('这一天没有习惯记录。', style: AppTextStyles.body),
+                _InfoCard(
+                  child: Text(context.tr('这一天没有习惯记录。', 'No habit records for this day.'), style: AppTextStyles.body),
                 )
               else
                 _HabitSummaryCardInTimeline(habits: habits),
               const SizedBox(height: 16),
-              const SectionLabel('每日复盘'),
+              SectionLabel(context.tr('每日复盘', 'Daily review')),
               _ReviewSummaryCard(
                 review: review,
                 onOpen: () async {
@@ -670,10 +687,10 @@ class _TaskSummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           ...tasks.map((task) {
             final label = task.done
-                ? '已完成'
+                ? context.tr('已完成', 'Done')
                 : task.deferred
-                    ? '已顺延'
-                    : '待完成';
+                    ? context.tr('已顺延', 'Deferred')
+                    : context.tr('待完成', 'Pending');
             final color = task.done
                 ? AppColors.success
                 : task.deferred
@@ -742,11 +759,11 @@ class _ReviewSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (review == null) ...[
-            const Text('这一天还没有填写复盘。', style: AppTextStyles.body),
+            Text(context.tr('这一天还没有填写复盘。', 'No review has been written for this day yet.'), style: AppTextStyles.body),
             const SizedBox(height: 12),
             TextButton(
               onPressed: onOpen,
-              child: const Text('去填写复盘'),
+              child: Text(context.tr('去填写复盘', 'Write review')),
             ),
           ] else ...[
             ...review!.items.map((item) => Padding(
@@ -757,7 +774,7 @@ class _ReviewSummaryCard extends StatelessWidget {
                       SizedBox(
                         width: 72,
                         child: Text(
-                          item.dimension.label,
+                          context.reviewDimensionLabel(item.dimension.apiValue),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -767,7 +784,7 @@ class _ReviewSummaryCard extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          '${item.status?.label ?? '未填写'} · ${item.comment}',
+                          '${item.status == null ? context.tr('未填写', 'Not set') : context.reviewStatusLabel(item.status!.apiValue)} · ${item.comment}',
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.text,
@@ -780,7 +797,8 @@ class _ReviewSummaryCard extends StatelessWidget {
                 )),
             const SizedBox(height: 6),
             Text(
-              '明日最重要的事：${review!.tomorrowTopPriority}',
+              context.tr('明日最重要的事：${review!.tomorrowTopPriority}',
+                  'Most important thing for tomorrow: ${review!.tomorrowTopPriority}'),
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -791,7 +809,7 @@ class _ReviewSummaryCard extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton(
               onPressed: onOpen,
-              child: const Text('查看 / 编辑复盘'),
+              child: Text(context.tr('查看 / 编辑复盘', 'View / Edit review')),
             ),
           ],
         ],
@@ -878,7 +896,7 @@ class _AlertCard extends StatelessWidget {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                const Text('轨迹提示',
+                Text(context.tr('轨迹提示', 'Trajectory insight'),
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -983,8 +1001,8 @@ class _TrendChartCardState extends State<_TrendChartCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '最近30天，你在往上走吗？',
+          Text(
+            context.tr('最近30天，你在往上走吗？', 'Are you trending upward over the last 30 days?'),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,
@@ -993,7 +1011,10 @@ class _TrendChartCardState extends State<_TrendChartCard> {
           ),
           const SizedBox(height: 6),
           Text(
-            '完成 1 个任务 +5 分，完成 1 个习惯 +5 分，写复盘 +5 分。',
+            context.tr(
+              '完成 1 个任务 +5 分，完成 1 个习惯 +5 分，写复盘 +5 分。',
+              'Each completed task is +5, each completed habit is +5, and each review is +5.',
+            ),
             style: AppTextStyles.caption.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 16),
@@ -1006,7 +1027,8 @@ class _TrendChartCardState extends State<_TrendChartCard> {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
-                '先行动几天，这里才会长出你的趋势线。',
+                context.tr('先行动几天，这里才会长出你的趋势线。',
+                    'Take action for a few days first, then your trend line will start to appear.'),
                 style: AppTextStyles.caption.copyWith(fontSize: 13),
               ),
             )
@@ -1174,57 +1196,87 @@ _TrajectoryInsight _buildTrajectoryInsight({
   final recentReview = _averageReviewScore(recent);
 
   if (recentTotal == 0) {
-    return const _TrajectoryInsight(
-      message: '轨迹还在积累数据，先按自己的节奏记录几天，再回来看看变化。',
+    return _TrajectoryInsight(
+      message: AppI18n.tr(
+        zh: '轨迹还在积累数据，先按自己的节奏记录几天，再回来看看变化。',
+        en: 'Your trajectory is still collecting data. Record a few days at your own pace, then come back to see the changes.',
+      ),
     );
   }
 
   if (streak == 0 && recentTotal >= 12 && (today?.totalScore ?? 0) <= 5) {
-    return const _TrajectoryInsight(
-      message: '前几天已经有一些积累了，今天补一个小动作，这条轨迹就会继续往前走。',
+    return _TrajectoryInsight(
+      message: AppI18n.tr(
+        zh: '前几天已经有一些积累了，今天补一个小动作，这条轨迹就会继续往前走。',
+        en: 'You already built up something over the last few days. Add one small action today and the line keeps moving forward.',
+      ),
     );
   }
 
   if (delta >= 4 && recentTotal >= 15) {
     return _TrajectoryInsight(
       message: streak >= 7
-          ? '最近 7 天比前一周更稳定，连续 $streak 天的节奏对你是有帮助的。'
-          : '最近 7 天在回升，说明你已经找到一点适合自己的节奏了。',
+          ? AppI18n.tr(
+              zh: '最近 7 天比前一周更稳定，连续 $streak 天的节奏对你是有帮助的。',
+              en: 'The last 7 days were steadier than the week before. A $streak-day streak is clearly helping you.',
+            )
+          : AppI18n.tr(
+              zh: '最近 7 天在回升，说明你已经找到一点适合自己的节奏了。',
+              en: 'The last 7 days are improving, which means you are finding a rhythm that fits you.',
+            ),
     );
   }
 
   if (recentHabit < recentTask && recentHabit <= recentReview) {
-    return const _TrajectoryInsight(
-      message: '这段时间习惯完成度相对弱一些，先把最基础的一项稳下来就够了。',
+    return _TrajectoryInsight(
+      message: AppI18n.tr(
+        zh: '这段时间习惯完成度相对弱一些，先把最基础的一项稳下来就够了。',
+        en: 'Habit consistency has been relatively weaker lately. Stabilize the most basic one first.',
+      ),
     );
   }
 
   if (recentTask < recentHabit && recentTask <= recentReview) {
-    return const _TrajectoryInsight(
-      message: '目标推进这一块可以再聚焦一点，先完成一个关键任务会更轻松。',
+    return _TrajectoryInsight(
+      message: AppI18n.tr(
+        zh: '目标推进这一块可以再聚焦一点，先完成一个关键任务会更轻松。',
+        en: 'Goal progress could be a bit more focused. Finishing one key task first will feel lighter.',
+      ),
     );
   }
 
   if (recentReview <= 1 && recentTotal >= 10) {
-    return const _TrajectoryInsight(
-      message: '这段时间行动不少，如果偶尔补一两次回看，会更容易看清自己的节奏。',
+    return _TrajectoryInsight(
+      message: AppI18n.tr(
+        zh: '这段时间行动不少，如果偶尔补一两次回看，会更容易看清自己的节奏。',
+        en: 'You have taken quite a few actions lately. Adding an occasional review will help you see your rhythm more clearly.',
+      ),
     );
   }
 
   if (streak >= 7 && recentTotal >= 15) {
     return _TrajectoryInsight(
-      message: '你已经连续行动 $streak 天，最近的变化是在一点点累积出来的。',
+      message: AppI18n.tr(
+        zh: '你已经连续行动 $streak 天，最近的变化是在一点点累积出来的。',
+        en: 'You have acted for $streak days in a row. The recent changes are being built little by little.',
+      ),
     );
   }
 
   if (streak > 0) {
     return _TrajectoryInsight(
-      message: '你已经连续行动 $streak 天，今天继续做一点，轨迹就会自然延续下去。',
+      message: AppI18n.tr(
+        zh: '你已经连续行动 $streak 天，今天继续做一点，轨迹就会自然延续下去。',
+        en: 'You have been moving for $streak straight days. Do a little more today and the trajectory will keep flowing.',
+      ),
     );
   }
 
-  return const _TrajectoryInsight(
-    message: '这几天有起伏很正常，先把今天过成“有记录的一天”就可以了。',
+  return _TrajectoryInsight(
+    message: AppI18n.tr(
+      zh: '这几天有起伏很正常，先把今天过成“有记录的一天”就可以了。',
+      en: 'Ups and downs over the last few days are normal. Start by making today a day with a record.',
+    ),
   );
 }
 
